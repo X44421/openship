@@ -1,0 +1,668 @@
+"use client";
+
+import { useState, useEffect, useCallback, useMemo } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { BlurIp } from "@/components/BlurIp";
+import {
+  Server,
+  Plus,
+  Loader2,
+  ArrowRight,
+  KeyRound,
+  Lock,
+  Network,
+  Boxes,
+  Activity,
+  Container,
+  Globe,
+  GitBranch,
+  BookOpen,
+  ExternalLink,
+  Layers,
+  MapPin,
+  HardDrive,
+} from "lucide-react";
+import { systemApi } from "@/lib/api";
+import type { ContainerApplyIntent } from "@/lib/api/system";
+import { PageContainer } from "@/components/ui/PageContainer";
+import DropdownMenu from "@/components/ui/DropdownMenu";
+import { Tabs, type TabDef } from "@/components/ui/Tabs";
+import { usePlatform } from "@/context/PlatformContext";
+import { useI18n, interpolate } from "@/components/i18n-provider";
+import { useToast } from "@/components/toast";
+import { useInfraFleet, type InfraSegment } from "@/hooks/useInfraFleet";
+import { InfraFleetCard } from "@/components/infra/InfraFleetCard";
+import { InfraFilters } from "@/components/infra/InfraFilters";
+import { ComingSoonPanel } from "./_components/coming-soon-panel";
+import * as CountryFlags from "country-flag-icons/react/3x2";
+
+const FLAGS = CountryFlags as Record<
+  string,
+  React.ComponentType<{ title?: string; className?: string }>
+>;
+
+type Reachability = "checking" | "online" | "offline";
+type ServersTab = "servers" | "cluster" | "networking";
+
+interface ServerEntry {
+  id: string;
+  name: string;
+  host: string;
+  port: number;
+  user: string;
+  auth: "key" | "password" | null;
+  country: string | null;
+  /** The auto-registered host row ("This Server") — deploys run locally, not SSH. */
+  isLocal: boolean;
+  /** Projects currently deployed to this server (active deployment → this host). */
+  projectCount: number;
+}
+
+/** Per-state colors: an ambient presence dot on the avatar + a word on the right. */
+/** `dot` is a RING, not a filled pip — same treatment as the scanned-component
+ *  circles (components-tab), which reads calmer than a solid dot at 6px. */
+/** A server's component bucket, or null while the fleet view hasn't loaded. */
+type InfraBucket = Exclude<InfraSegment, "all">;
+/** Sort weight per bucket — attention first, then updates, then healthy, then unknown. */
+const BUCKET_RANK: Record<InfraBucket, number> = { attention: 0, updates: 1, healthy: 2 };
+const bucketRank = (b: InfraBucket | null) => (b ? BUCKET_RANK[b] : 3);
+
+const STATUS: Record<Reachability, { dot: string; text: string }> = {
+  online: { dot: "border-success-solid", text: "text-success" },
+  offline: { dot: "border-danger-solid", text: "text-danger" },
+  checking: { dot: "border-warning-solid animate-pulse", text: "text-muted-foreground/70" },
+};
+
+export default function ServersPage() {
+  const { t } = useI18n();
+  const router = useRouter();
+  const { selfHosted, deployMode, isServerHost, hostControlEnabled } = usePlatform();
+  const { toast } = useToast();
+  const isDesktop = deployMode === "desktop";
+  /** Managed edge/mail containers exist only where we operate the boxes. */
+  const infraEnabled = selfHosted || isDesktop;
+
+  const [activeTab, setActiveTab] = useState<ServersTab>("servers");
+  const [servers, setServers] = useState<ServerEntry[]>([]);
+  const [loading, setLoading] = useState(true);
+  /** Live reachability per server (see probeReachability). */
+  const [reach, setReach] = useState<Record<string, Reachability>>({});
+  /**
+   * Why a row is offline, when the API knows. "Offline" on THIS box usually means
+   * the container→host SSH channel is firewalled, not that the machine is down
+   * (#490) — so the word alone sends people looking in the wrong place.
+   */
+  const [reachHint, setReachHint] = useState<Record<string, string>>({});
+  /** Active (running) port-forward count per server — desktop-only. */
+  const [forwardCounts, setForwardCounts] = useState<Record<string, number>>({});
+
+  const fetchServers = useCallback(async () => {
+    try {
+      setLoading(true);
+      const list = await systemApi.listServers();
+      setServers(
+        list.map((s) => ({
+          id: s.id,
+          name: s.name || s.sshHost,
+          host: s.sshHost,
+          port: s.sshPort ?? 22,
+          user: s.sshUser ?? "root",
+          auth: (s.sshAuthMethod as "key" | "password" | null) ?? null,
+          country: s.country ?? null,
+          isLocal: s.isLocal ?? false,
+          projectCount: s.projectCount ?? 0,
+        })),
+      );
+    } catch {
+      setServers([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchServers();
+  }, [fetchServers]);
+
+  // "Add → This machine" (#527): register the box OpenShip runs on as a deploy
+  // target. Server-host only (desktop derives "here" without a row; the SaaS
+  // control plane is never its own target), and only while host control is on —
+  // with it off the create call 400s. Once the isLocal row exists it's already in
+  // the list, so the affordance collapses back to the plain "Add server" button.
+  const hasLocalServer = servers.some((s) => s.isLocal);
+  const canAddThisMachine = isServerHost && hostControlEnabled && !hasLocalServer;
+
+  const addThisMachine = useCallback(async () => {
+    try {
+      // Loopback triggers the backend's isLocal-adoption branch (box-org gated),
+      // never a plain SSH row — see createServer in servers.controller.ts.
+      const created = await systemApi.createServerEntry({ sshHost: "127.0.0.1", sshPort: 22 });
+      await fetchServers();
+      if (created?.id) router.push(`/servers/${created.id}`);
+    } catch {
+      toast("error", t.servers.list.addThisMachineError);
+    }
+  }, [fetchServers, router, toast, t]);
+
+  // Real reachability: seed every server to "checking", then probe each in
+  // parallel and flip its dot as the probe resolves (mirrors the tunnel fan-out).
+  useEffect(() => {
+    if (servers.length === 0) return;
+    let cancelled = false;
+    setReach(Object.fromEntries(servers.map((s) => [s.id, "checking" as const])));
+    servers.forEach((s) => {
+      void systemApi
+        .probeReachability(s.id)
+        .then((r) => {
+          if (cancelled) return;
+          setReach((prev) => ({ ...prev, [s.id]: r.reachable ? "online" : "offline" }));
+          if (!r.reachable && r.hint) setReachHint((prev) => ({ ...prev, [s.id]: r.hint! }));
+        })
+        .catch(() => {
+          if (!cancelled) setReach((prev) => ({ ...prev, [s.id]: "offline" }));
+        });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [servers]);
+
+  // Active forward counts (desktop-only). Best-effort and per-server.
+  useEffect(() => {
+    if (!isDesktop || servers.length === 0) return;
+    let cancelled = false;
+    void Promise.all(
+      servers.map(async (s) => {
+        try {
+          const rows = await systemApi.listTunnels(s.id);
+          return [s.id, rows.filter((tn) => tn.running).length] as const;
+        } catch {
+          return [s.id, 0] as const;
+        }
+      }),
+    ).then((entries) => {
+      if (!cancelled) setForwardCounts(Object.fromEntries(entries));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [isDesktop, servers]);
+
+  const counts = servers.reduce(
+    (acc, s) => {
+      const st = reach[s.id] ?? "checking";
+      acc[st] += 1;
+      return acc;
+    },
+    { online: 0, offline: 0, checking: 0 } as Record<Reachability, number>,
+  );
+
+  const totalProjects = servers.reduce((sum, s) => sum + s.projectCount, 0);
+  const regionCount = new Set(servers.map((s) => s.country).filter(Boolean)).size;
+  const onlinePct = servers.length ? Math.round((counts.online / servers.length) * 100) : 0;
+
+  // ── Managed containers (edge / mail) across the fleet ──────────────────────
+  const infra = useInfraFleet(infraEnabled);
+  const ic = t.servers.list.infra;
+  const [segment, setSegment] = useState<InfraSegment>("all");
+  const [search, setSearch] = useState("");
+
+  const runBulk = useCallback(
+    async (intent: ContainerApplyIntent) => {
+      try {
+        const res = await infra.applyAll(intent);
+        if (!res) return; // infra disabled (cloud) — the buttons aren't rendered there
+        const n = res.started.length;
+        const skipped = res.skipped.length;
+        if (n === 0 && skipped === 0) {
+          toast("info", ic.nothingToDo);
+          return;
+        }
+        const head = interpolate(intent === "update" ? ic.started : ic.startedRestart, {
+          n: String(n),
+        });
+        const tail = skipped > 0 ? interpolate(ic.skipped, { n: String(skipped) }) : "";
+        toast(n > 0 ? "success" : "info", tail ? `${head} · ${tail}` : head);
+      } catch {
+        toast("error", ic.applyFailed);
+      }
+    },
+    [infra, toast, ic],
+  );
+
+  /**
+   * Which bucket a server falls in — attention wins over updates. `null` until the
+   * fleet view loads: an unread server matches no segment rather than being called
+   * healthy, so the segment counts and the filtered list can never disagree.
+   */
+  const bucketOf = useCallback(
+    (id: string): InfraBucket | null => {
+      const s = infra.summaries.get(id);
+      if (!s) return null;
+      if (s.down.length + s.missing.length > 0 || s.edgeAbsent) return "attention";
+      return s.updates > 0 ? "updates" : "healthy";
+    },
+    [infra.summaries],
+  );
+
+  // Attention first, then updates — the row you have to act on is never below the
+  // fold. Order inside a bucket is preserved (Array.prototype.sort is stable).
+  const visibleServers = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    const rows = servers.filter((s) => {
+      if (q && !s.name.toLowerCase().includes(q) && !s.host.toLowerCase().includes(q)) return false;
+      return segment === "all" || bucketOf(s.id) === segment;
+    });
+    if (!infraEnabled) return rows;
+    return [...rows].sort((a, b) => bucketRank(bucketOf(a.id)) - bucketRank(bucketOf(b.id)));
+  }, [servers, search, segment, bucketOf, infraEnabled]);
+
+  /** The filter strip only earns its space once the list is long enough to hunt in. */
+  const showFilters = infraEnabled && servers.length > 6;
+
+  const tabs: TabDef<ServersTab>[] = [
+    { key: "servers", label: t.servers.tabsNav.servers, icon: Server },
+    { key: "cluster", label: t.servers.tabsNav.cluster, icon: Boxes },
+    { key: "networking", label: t.servers.tabsNav.networking, icon: Network },
+  ];
+
+  return (
+    <PageContainer>
+      {/* Header — mb-6 to match the server DETAIL page's header gap exactly, so
+          the tab strip sits at the same y on both pages (this was mb-5, which put
+          the list's tabs 4px higher than the detail's). */}
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-2xl font-medium text-foreground/80" style={{ letterSpacing: "-0.2px" }}>
+            {t.servers.list.title}
+          </h1>
+          <p className="text-sm text-muted-foreground/70 mt-1">{t.servers.list.subtitle}</p>
+        </div>
+        {activeTab === "servers" &&
+          (canAddThisMachine ? (
+            <DropdownMenu
+              align="right"
+              triggerClassName="inline-flex items-center gap-2 px-4 py-2.5 bg-primary text-primary-foreground text-sm font-medium rounded-xl hover:bg-primary/90 transition-all hover:shadow-lg hover:shadow-primary/25"
+              trigger={
+                <>
+                  <Plus className="size-4" />
+                  {t.servers.list.addServer}
+                </>
+              }
+              actions={[
+                {
+                  id: "remote",
+                  label: t.servers.list.addRemoteServer,
+                  icon: <Server className="size-4" />,
+                  onClick: () => router.push("/servers/new"),
+                },
+                {
+                  id: "this-machine",
+                  label: t.servers.list.addThisMachine,
+                  icon: <HardDrive className="size-4" />,
+                  onClick: () => void addThisMachine(),
+                },
+              ]}
+            />
+          ) : (
+            <button
+              onClick={() => router.push("/servers/new")}
+              className="inline-flex items-center gap-2 px-4 py-2.5 bg-primary text-primary-foreground text-sm font-medium rounded-xl hover:bg-primary/90 transition-all hover:shadow-lg hover:shadow-primary/25"
+            >
+              <Plus className="size-4" />
+              {t.servers.list.addServer}
+            </button>
+          ))}
+      </div>
+
+      <Tabs tabs={tabs} value={activeTab} onChange={setActiveTab} className="mb-6" />
+
+      {activeTab === "cluster" && (
+        <ComingSoonPanel
+          art="cluster"
+          badge={t.servers.comingSoon.badge}
+          title={t.servers.comingSoon.clusterTitle}
+          body={t.servers.comingSoon.clusterBody}
+        />
+      )}
+
+      {activeTab === "networking" && (
+        <ComingSoonPanel
+          art="network"
+          badge={t.servers.comingSoon.badge}
+          title={t.servers.comingSoon.networkingTitle}
+          body={t.servers.comingSoon.networkingBody}
+        />
+      )}
+
+      {activeTab === "servers" &&
+        (loading ? (
+          <div className="flex items-center justify-center py-20">
+            <Loader2 className="size-5 animate-spin text-muted-foreground" />
+          </div>
+        ) : servers.length === 0 ? (
+          // Empty state stands alone (no Quick Info card) and centers.
+          <EmptyState
+            onAdd={() => router.push("/servers/new")}
+            onAddThisMachine={canAddThisMachine ? () => void addThisMachine() : undefined}
+          />
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-6">
+            {/* ── LEFT COLUMN ── */}
+            <div className="min-w-0">
+              {showFilters && (
+                <InfraFilters
+                  segment={segment}
+                  onSegmentChange={setSegment}
+                  search={search}
+                  onSearchChange={setSearch}
+                  counts={infra.counts}
+                />
+              )}
+              <div className="overflow-hidden rounded-2xl border border-border/50 bg-card divide-y divide-border/50">
+                {visibleServers.length === 0 && (
+                  <p className="px-5 py-8 text-center text-sm text-muted-foreground">{ic.noMatches}</p>
+                )}
+                {visibleServers.map((server) => {
+                  const state = reach[server.id] ?? "checking";
+                  const sm = STATUS[state];
+                  const authLabel =
+                    server.auth === "password"
+                      ? t.servers.list.authPassword
+                      : server.auth === "key"
+                        ? t.servers.list.authKey
+                        : null;
+                  const AuthIcon = server.auth === "password" ? Lock : KeyRound;
+                  const fwd = forwardCounts[server.id] ?? 0;
+                  // Component chip: one per row at most, and only when there IS
+                  // something to say (same rule as the project count below —
+                  // a healthy box gets no chip). Down/absent outranks an update.
+                  const comp = infra.summaries.get(server.id);
+                  const downParts = comp
+                    ? [
+                        ...[...comp.down, ...comp.missing].map((k) =>
+                          k === "edge" ? ic.chipEdgeDown : ic.chipMailDown,
+                        ),
+                        ...(comp.edgeAbsent ? [ic.chipEdgeMissing] : []),
+                      ]
+                    : [];
+                  return (
+                    <Link
+                      key={server.id}
+                      href={`/servers/${server.id}`}
+                      className="group flex w-full items-center gap-3.5 px-5 py-3 text-start transition-colors hover:bg-muted/40"
+                    >
+                      {/* Avatar — full country flag when we can geolocate the IP, else glyph.
+                          Fixed 36px slot keeps the name column aligned across rows. */}
+                      {(() => {
+                        const Flag = server.country ? FLAGS[server.country] : undefined;
+                        return Flag ? (
+                          <div className="flex size-9 shrink-0 items-center justify-center">
+                            <Flag
+                              title={server.country ?? undefined}
+                              className="h-[18px] w-auto rounded-[2px] ring-1 ring-border/50"
+                            />
+                          </div>
+                        ) : (
+                          <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-muted/60 transition-colors group-hover:bg-muted">
+                            <Server className="size-[18px] text-foreground/70" />
+                          </div>
+                        );
+                      })()}
+
+                      {/* Name + host (fixed column — keeps meta aligned, no dead gap) */}
+                      <div className="w-44 min-w-0 shrink-0 text-start lg:w-56">
+                        <p className="truncate text-sm font-medium text-foreground">
+                          {server.name}
+                          {server.isLocal && (
+                            <span className="ms-2 rounded bg-info/10 px-1.5 py-0.5 text-[10px] font-medium text-info align-middle">
+                              {t.servers.list.thisServer}
+                            </span>
+                          )}
+                        </p>
+                        <p className="mt-0.5 truncate font-mono text-xs text-muted-foreground">
+                          {server.isLocal ? t.servers.list.currentHost : <BlurIp>{server.host}</BlurIp>}
+                        </p>
+                      </div>
+
+                      {/* Meta chips */}
+                      <div className="flex min-w-0 flex-1 items-center gap-3 overflow-hidden">
+                        {/* Nothing deployed → no chip at all. A greyed-out "0" beside
+                            a layers glyph is noise that reads as an error. With
+                            projects, the count is spelled out ("1 project") instead
+                            of leaving an icon to carry the meaning. */}
+                        {server.projectCount > 0 && (
+                          <span className="inline-flex shrink-0 items-center rounded-md bg-muted/60 px-2 py-0.5 text-xs text-foreground/80">
+                            {interpolate(
+                              server.projectCount === 1
+                                ? t.servers.list.projectCountOne
+                                : t.servers.list.projectCountMany,
+                              { n: String(server.projectCount) },
+                            )}
+                          </span>
+                        )}
+                        {downParts.length > 0 ? (
+                          <span className="inline-flex shrink-0 items-center rounded-md bg-danger-bg px-2 py-0.5 text-xs font-medium text-danger">
+                            {downParts.join(" · ")}
+                          </span>
+                        ) : comp && comp.updates > 0 ? (
+                          <span className="inline-flex shrink-0 items-center rounded-md bg-warning-bg px-2 py-0.5 text-xs font-medium text-warning">
+                            {interpolate(comp.updates === 1 ? ic.chipUpdateOne : ic.chipUpdates, {
+                              n: String(comp.updates),
+                            })}
+                          </span>
+                        ) : null}
+                        {authLabel && (
+                          <span className="inline-flex shrink-0 items-center gap-1.5 rounded-md bg-muted/60 px-2 py-0.5 text-xs text-muted-foreground">
+                            <AuthIcon className="size-3.5" />
+                            {authLabel}
+                          </span>
+                        )}
+                        {isDesktop && fwd > 0 && (
+                          <span className="hidden shrink-0 items-center gap-1.5 text-xs text-muted-foreground md:inline-flex">
+                            <Network className="size-3.5" />
+                            {interpolate(t.servers.list.forwarding, { n: String(fwd) })}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Status state + arrow */}
+                      <div className="flex shrink-0 items-center gap-4">
+                        <span
+                          title={reachHint[server.id] ?? t.servers.list[state]}
+                          className={`inline-flex items-center gap-1.5 text-xs font-medium ${sm.text}`}
+                        >
+                          <span className={`size-2.5 rounded-full border-2 ${sm.dot}`} />
+                          {t.servers.list[state]}
+                        </span>
+                        <ArrowRight className="size-4 text-muted-foreground/40 transition-colors group-hover:text-muted-foreground rtl:rotate-180" />
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* ── RIGHT COLUMN (Sticky) ── */}
+            <div className="space-y-4 lg:sticky lg:top-6 lg:self-start">
+            <div className="bg-card rounded-2xl border border-border/50">
+              <div className="flex items-center gap-3 px-5 py-4 border-b border-border/50">
+                <div className="w-9 h-9 bg-muted rounded-xl flex items-center justify-center">
+                  <Activity className="size-[18px] text-muted-foreground" />
+                </div>
+                <div>
+                  <h2 className="font-semibold text-foreground text-[15px]">{t.servers.list.quickInfo}</h2>
+                  <p className="text-xs text-muted-foreground">{t.servers.list.serverOverview}</p>
+                </div>
+              </div>
+              <div className="p-5 space-y-5">
+                {/* Health ratio — online / total with a progress bar. */}
+                <div>
+                  <div className="flex items-baseline justify-between">
+                    <div className="flex items-baseline gap-1.5">
+                      <span className="text-2xl font-semibold text-foreground tabular-nums">{counts.online}</span>
+                      <span className="text-sm text-muted-foreground">
+                        / {servers.length} {t.servers.list.online}
+                      </span>
+                    </div>
+                    <span className="text-xs font-medium text-muted-foreground tabular-nums">{onlinePct}%</span>
+                  </div>
+                  <div className="mt-2.5 h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                    <div
+                      className="h-full rounded-full bg-success-solid transition-[width] duration-500"
+                      style={{ width: `${onlinePct}%` }}
+                    />
+                  </div>
+                  {counts.offline > 0 && (
+                    <p className="mt-2 inline-flex items-center gap-1.5 text-xs text-danger">
+                      <span className="size-1.5 rounded-full bg-danger-solid" />
+                      {counts.offline} {t.servers.list.offline}
+                    </p>
+                  )}
+                </div>
+
+                {/* Fleet stats. */}
+                <div className="space-y-0.5 border-t border-border/50 pt-4">
+                  {[
+                    { icon: Server, label: t.servers.list.totalServers, value: servers.length },
+                    { icon: Layers, label: t.servers.list.projects, value: totalProjects },
+                    { icon: MapPin, label: t.servers.list.regions, value: regionCount },
+                  ].map((row) => (
+                    <div key={row.label} className="flex items-center justify-between py-1.5">
+                      <span className="inline-flex items-center gap-2.5 text-sm text-muted-foreground">
+                        <row.icon className="size-4 text-muted-foreground/60" />
+                        {row.label}
+                      </span>
+                      <span className="text-sm font-medium text-foreground tabular-nums">{row.value}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Managed containers across the fleet. Self-hosted/desktop only, and
+                only once at least one component is tracked — a box we've never
+                scanned has nothing to report. */}
+            {infraEnabled && !infra.empty && (
+              <InfraFleetCard
+                counts={infra.counts}
+                scanning={infra.scanning}
+                applying={infra.applying}
+                onScan={() => void infra.scan()}
+                onApply={(intent) => void runBulk(intent)}
+              />
+            )}
+          </div>
+        </div>
+      ))}
+    </PageContainer>
+  );
+}
+
+/** No-servers illustration + primer. Unchanged from the original list view,
+ *  now scoped to the Servers tab. */
+function EmptyState({
+  onAdd,
+  onAddThisMachine,
+}: {
+  onAdd: () => void;
+  /** Present only on a server-host with host control on — offers registering the
+   *  box OpenShip runs on right from the empty state (#527). */
+  onAddThisMachine?: () => void;
+}) {
+  const { t } = useI18n();
+  return (
+    <div className="py-16 text-center">
+      <div className="relative mx-auto w-64 h-44 mb-8">
+        <svg className="absolute inset-0 w-full h-full" viewBox="0 0 260 180" fill="none">
+          {/* Stacked server card */}
+          <rect x="58" y="52" width="116" height="88" rx="14" fill="var(--th-sf-04)" />
+          <rect x="48" y="42" width="116" height="88" rx="14" fill="var(--th-sf-03)" stroke="var(--th-bd-subtle)" strokeWidth="1" />
+          <rect x="38" y="32" width="116" height="88" rx="14" fill="var(--th-card-bg)" stroke="var(--th-bd-default)" strokeWidth="1" />
+          {/* Rack units — one online (single success accent), the rest idle */}
+          <rect x="52" y="46" width="74" height="16" rx="4" fill="var(--th-on-05)" stroke="var(--th-on-10)" strokeWidth="0.8" />
+          <rect x="58" y="52" width="38" height="4" rx="2" fill="var(--th-on-12)" />
+          <circle cx="138" cy="54" r="3" fill="#22c55e" fillOpacity="0.7" />
+          <rect x="52" y="68" width="74" height="16" rx="4" fill="var(--th-on-04)" stroke="var(--th-on-08)" strokeWidth="0.8" />
+          <rect x="58" y="74" width="38" height="4" rx="2" fill="var(--th-on-10)" />
+          <circle cx="138" cy="76" r="3" fill="var(--th-on-16)" />
+          <rect x="52" y="90" width="74" height="16" rx="4" fill="var(--th-on-04)" stroke="var(--th-on-08)" strokeWidth="0.8" />
+          <rect x="58" y="96" width="38" height="4" rx="2" fill="var(--th-on-08)" />
+          <circle cx="138" cy="98" r="3" fill="var(--th-on-12)" />
+          {/* Dashed connector → add node */}
+          <path d="M154 86 Q 176 84 188 86" stroke="var(--th-on-16)" strokeWidth="1.5" strokeDasharray="3 3" fill="none" />
+          {/* Add-server node */}
+          <circle cx="210" cy="86" r="22" fill="var(--th-on-05)" />
+          <circle cx="210" cy="86" r="16" fill="var(--th-card-bg)" stroke="var(--th-on-20)" strokeWidth="2" strokeDasharray="4 3" />
+          <path d="M210 78v16M202 86h16" stroke="var(--th-on-40)" strokeWidth="2" strokeLinecap="round" />
+          {/* Decorative dots + sparkles */}
+          <circle cx="26" cy="58" r="4" fill="var(--th-on-10)" />
+          <circle cx="34" cy="146" r="6" fill="var(--th-on-06)" />
+          <circle cx="238" cy="40" r="3.5" fill="var(--th-on-12)" />
+          <circle cx="248" cy="132" r="4.5" fill="var(--th-on-06)" />
+          <path d="M22 104l2-4 2 4-4-2 4 0-4 2z" fill="var(--th-on-16)" />
+          <path d="M228 150l1.6-3.2 1.6 3.2-3.2-1.6 3.2 0-3.2 1.6z" fill="var(--th-on-12)" />
+        </svg>
+      </div>
+
+      <h3 className="text-2xl font-medium text-foreground/80 mb-2" style={{ letterSpacing: "-0.2px" }}>
+        {t.servers.list.emptyTitle}
+      </h3>
+      <p className="text-sm text-muted-foreground/70 max-w-sm mx-auto mb-8 leading-relaxed">
+        {t.servers.list.emptyDescription}
+      </p>
+
+      <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-10">
+        <button
+          onClick={onAdd}
+          className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground text-sm font-medium rounded-xl hover:bg-primary/90 transition-all hover:shadow-lg hover:shadow-primary/25 hover:-translate-y-0.5"
+        >
+          <Plus className="size-4" />
+          {t.servers.list.addFirstServer}
+        </button>
+        {onAddThisMachine && (
+          <button
+            onClick={onAddThisMachine}
+            className="inline-flex items-center gap-2 rounded-xl bg-muted/50 px-6 py-3 text-sm font-medium text-foreground transition-colors hover:bg-muted"
+          >
+            <HardDrive className="size-4" />
+            {t.servers.list.addThisMachine}
+          </button>
+        )}
+        <a
+          href="https://openship.io/docs/guides/custom-servers"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-2 rounded-xl bg-muted/50 px-6 py-3 text-sm font-medium text-foreground transition-colors hover:bg-muted"
+        >
+          <BookOpen className="size-4" />
+          {t.servers.list.seeDocs}
+          <ExternalLink className="size-3.5 opacity-60" />
+        </a>
+      </div>
+
+      <div className="max-w-2xl mx-auto">
+        <p className="text-xs text-muted-foreground/60 uppercase tracking-wider mb-4">
+          {t.servers.list.whatGetsConfigured}
+        </p>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {[
+            { label: t.servers.list.featContainer, desc: t.servers.list.featContainerDesc, Icon: Container },
+            { label: t.servers.list.featProxy, desc: t.servers.list.featProxyDesc, Icon: Globe },
+            { label: t.servers.list.monitoring, desc: t.servers.list.monitoringDesc, Icon: Activity },
+            { label: "Git", desc: t.servers.list.gitDesc, Icon: GitBranch },
+          ].map((f) => (
+            <div key={f.label} className="bg-card border border-border/50 rounded-xl p-4 text-start">
+              <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center mb-3">
+                <f.Icon className="size-4 text-muted-foreground" />
+              </div>
+              <p className="text-sm font-medium text-foreground">{f.label}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">{f.desc}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}

@@ -1,0 +1,970 @@
+{
+  "settingSection": {
+    "edit": "Edit",
+    "save": "Save",
+    "cancel": "Cancel"
+  },
+  "appSource": {
+    "title": "Source",
+    "description": "This app deploys from a release — there's no repo to push to; updates ship as new versions.",
+    "sourceType": "Source",
+    "kindRelease": "Release",
+    "kindImage": "Container image",
+    "current": "Current version",
+    "latest": "Latest version",
+    "repository": "Repository",
+    "notChecked": "Not checked yet",
+    "upToDate": "Up to date",
+    "updateAvailable": "Update available",
+    "checkForUpdates": "Check for updates",
+    "checkFailed": "Couldn't check for updates",
+    "update": "Update",
+    "updateTo": "Update to {version}",
+    "updating": "Updating…",
+    "updateFailed": "Update failed",
+    "toastTitle": "Source",
+    "cliManaged": "This is the Openship control plane — it updates itself. Run \"openship update\" on the host to upgrade it; there's nothing to change here."
+  },
+  "appSettings": {
+    "modeApp": "App settings",
+    "modeDeployment": "Deployment",
+    "saveChanges": "Save changes",
+    "saving": "Saving…",
+    "saved": "Settings saved",
+    "saveHint": "Save to store these changes — they apply the next time the app is deployed.",
+    "applyNow": "Apply now",
+    "applying": "Applying…",
+    "applied": "Applying changes",
+    "restartNote": "Apply now to restart the app with the new settings, or they take effect on the next deploy.",
+    "redeployNote": "Applying these changes recreates the app — you may need to re-authenticate its dashboard or CLI afterwards.",
+    "advancedShow": "Show advanced",
+    "advancedHide": "Hide advanced",
+    "secretSet": "Set — leave blank to keep the current value",
+    "loadError": "Couldn't load app settings.",
+    "saveFailed": "Couldn't save settings.",
+    "applyFailed": "Couldn't apply changes.",
+    "unmanaged": "This app has no configurable settings yet."
+  },
+  "appInstall": {
+    "install": "Install",
+    "installing": "Installing…",
+    "advanced": "Advanced deployment options",
+    "nameLabel": "Name",
+    "nameHint": "How this app appears in Openship.",
+    "domainTitle": "Where should it live?",
+    "domainFree": "Free subdomain",
+    "domainFreeHint": "A free subdomain on {domain}",
+    "domainCustom": "Your own domain",
+    "domainCustomPlaceholder": "app.example.com",
+    "domainNone": "No public URL",
+    "domainNoneHint": "Internal only — no public address.",
+    "customRequired": "Enter your domain, or pick another option.",
+    "progressPreparing": "Preparing…",
+    "progressDeploying": "Deploying…",
+    "progressLive": "Your app is live",
+    "openApp": "Open app",
+    "goToApp": "Go to app",
+    "installFailed": "Install failed",
+    "viewDetails": "View technical details",
+    "showLogs": "Show logs",
+    "hideLogs": "Hide logs",
+    "deployLogs": "deploy logs",
+    "back": "Back",
+    "phaseImages": "Preparing images",
+    "phaseServices": "Starting services",
+    "phaseAppSetup": "Finishing setup",
+    "phaseReady": "Live",
+    "phaseQueued": "Queued…",
+    "stepperTitle": "Installation steps",
+    "firstLoginTitle": "First login",
+    "firstLoginUser": "Username",
+    "firstLoginPassword": "Password",
+    "destinationTitle": "Where to install",
+    "destinationHint": "Pick the server or cloud this app runs on.",
+    "descMore": "More",
+    "descLess": "Less",
+    "needsTitle": "What it needs",
+    "needsMemory": "{value} RAM",
+    "needsCpu": "{value}",
+    "hostFitTitle": "This server is smaller than {app} needs",
+    "hostFitMemory": "Needs {needed} of RAM — this one has {available}",
+    "hostFitCpu": "Needs {needed} — this one has {available}",
+    "hostFitHint": "Install it on a bigger machine, or pick another destination.",
+    "routePortLabel": "Port only (no domain)",
+    "routePortDesc": "Reachable at the host address and port — no domain or Cloud needed.",
+    "routeFreeLabel": "Free subdomain",
+    "routeFreeDesc": "A free subdomain on {domain}, routed by Openship Cloud.",
+    "routeFreeNeedsCloud": "Connect Openship Cloud to use a free subdomain.",
+    "routeCustomLabel": "Your own domain",
+    "routeCustomDesc": "Point a domain you own at this app.",
+    "routeDomainLabel": "Domain",
+    "routeDomainDesc": "Reach it on a domain — a free subdomain or your own.",
+    "exposeTitle": "Exposure",
+    "httpBadge": "Web",
+    "tcpBadge": "Database",
+    "tcpPublishLabel": "Publish port",
+    "tcpPublishDesc": "Publish it on the host so external tools can connect.",
+    "tcpInternalLabel": "Internal only",
+    "tcpInternalDesc": "Only other services in this app can reach it.",
+    "tcpFirewallNote": "Open port {port} on your server firewall to connect from outside.",
+    "desktopReachNote": "On desktop you can open it on localhost — or forward the port from Servers → Ports for a remote server.",
+    "statusInstalling": "Installing",
+    "statusLive": "Live",
+    "statusCancelled": "Cancelled",
+    "statusFailed": "Failed",
+    "stopInstall": "Stop install",
+    "stopping": "Stopping…",
+    "installCancelled": "Install cancelled",
+    "startOver": "Start over",
+    "breadcrumbApps": "Apps",
+    "appEyebrow": "App",
+    "stopFailed": "Couldn't stop the install",
+    "mail": {
+      "title": "Set up mail",
+      "subtitle": "Deploy webmail on your own domain, or connect an existing mailbox.",
+      "chooseSelf": "Self-host a mail server",
+      "chooseSelfDesc": "Full SMTP/IMAP + webmail (iRedMail) on your server — we provision everything.",
+      "chooseConnect": "Connect an existing mailbox",
+      "chooseConnectDesc": "Deploy just the webmail UI, pointed at any external SMTP/IMAP provider — Amazon SES, Oracle Cloud, Gmail, Fastmail, and more.",
+      "provider": "Provider",
+      "presets": {
+        "custom": "Custom",
+        "ses": "Amazon SES",
+        "gmail": "Gmail",
+        "fastmail": "Fastmail"
+      },
+      "sendOnlyNote": "{provider} only sends mail — it holds no mailboxes. IMAP has to point at wherever your mail is actually stored.",
+      "sendOnlyNoInbox": "No inbox yet? Set up a mail server here, then relay sending through {provider} →",
+      "imapOnOurServer": "Mailboxes read from {host} — this instance's own mail server. Only sending goes through {provider}.",
+      "relayNote": "This instance already runs a mail server. If the mailboxes are on it, relay sending from its Delivery → Sending tab instead: IMAP stays local and only sending goes to {provider}, per domain or per address, and its own webmail keeps working.",
+      "relayCta": "Configure the relay instead →",
+      "hostname": "Webmail address",
+      "hostnameHint": "The public URL people open to read their mail, e.g. mail.example.com.",
+      "imapHost": "IMAP host",
+      "imapPort": "IMAP port",
+      "smtpHost": "SMTP host",
+      "smtpPort": "SMTP port",
+      "deploy": "Deploy webmail",
+      "deploying": "Deploying…",
+      "hostnameRequired": "Enter the webmail address.",
+      "hostsRequired": "Enter both the IMAP and SMTP host."
+    }
+  },
+  "advanced": {
+    "projectInfo": {
+      "title": "Project Info",
+      "description": "Current configuration summary"
+    },
+    "metric": {
+      "status": "Status",
+      "project": "Project",
+      "hostedOn": "Hosted On"
+    },
+    "projectMenu": {
+      "rename": "Rename project",
+      "copyId": "Copy project ID",
+      "idCopied": "Project ID copied",
+      "copyFailed": "Couldn't copy to the clipboard",
+      "pause": "Pause project",
+      "resume": "Resume project",
+      "delete": "Delete project"
+    },
+    "rename": {
+      "title": "Rename project",
+      "description": "Changes the display name. Nothing is redeployed.",
+      "label": "Project name",
+      "placeholder": "My project",
+      "identityNote": "The project keeps the identity “{slug}” — its URL, container names and volumes don't change. To change the URL, edit the domain under Domains & Routes.",
+      "save": "Save",
+      "cancel": "Cancel",
+      "toast": {
+        "renamed": "Renamed to {name}",
+        "failed": "Failed to rename the project"
+      }
+    },
+    "statusActive": "Active",
+    "statusDisabled": "Disabled",
+    "hostedCloud": "Openship Cloud",
+    "hostedServer": "Server",
+    "hostedLocal": "Local",
+    "projectStatus": {
+      "title": "Project Status",
+      "description": "Control whether the project is live or paused",
+      "active": "Project Active",
+      "disabled": "Project Disabled",
+      "liveAccessible": "Live and accessible",
+      "pausedInaccessible": "Paused and not accessible",
+      "disable": "Disable",
+      "enable": "Enable"
+    },
+    "cache": {
+      "title": "Cache",
+      "description": "Clear cached build artifacts and dependency installs",
+      "clearInstall": "Clear Install Cache",
+      "clearInstallDesc": "Remove cached node_modules",
+      "clearBuild": "Clear Build Cache",
+      "clearBuildDesc": "Remove cached build output"
+    },
+    "transfer": {
+      "title": "Transfer & Clone",
+      "description": "Move or duplicate this project to a different environment",
+      "current": "Current",
+      "transfer": "Transfer",
+      "clone": "Clone",
+      "anotherServer": "Another server",
+      "targetLocal": "Local Machine",
+      "targetServer": "Self-Hosted Server",
+      "targetCloud": "Openship Cloud"
+    },
+    "danger": {
+      "title": "Danger Zone",
+      "description": "Irreversible actions for this project",
+      "body": "Deleting this project will permanently remove all deployments, custom domains, environment variables, and analytics data.",
+      "delete": "Delete Project"
+    },
+    "toast": {
+      "toggleFailed": "Failed to toggle project",
+      "clearInstallFailed": "Failed to clear install cache",
+      "clearBuildFailed": "Failed to clear build cache"
+    },
+    "routing": {
+      "title": "Routing",
+      "description": "How the edge reaches this app's upstream",
+      "intro": "Choose how the edge addresses this project's container.",
+      "note": "Loopback port is recommended: a private 127.0.0.1 host port, stable across restarts and never network-exposed. Container IP is advanced (zero-downtime swaps; needs the edge on the Docker bridge; not supported on Docker Desktop).",
+      "modes": {
+        "auto": {
+          "label": "Auto",
+          "desc": "Recommended (loopback port)"
+        },
+        "loopbackPort": {
+          "label": "Loopback port",
+          "desc": "Private 127.0.0.1 host port"
+        },
+        "containerIp": {
+          "label": "Container IP",
+          "desc": "Advanced — bridge IP"
+        }
+      },
+      "toast": {
+        "saved": "Routing set to {mode}",
+        "failed": "Failed to update routing"
+      }
+    },
+    "internalAlias": {
+      "title": "Internal hostname",
+      "description": "Custom name other services use to reach this app privately",
+      "intro": "Set an extra DNS name for this app on its private project network. It resolves alongside the default (the project slug) — other linked services can use either. Public access is unchanged; this never exposes a port.",
+      "label": "Hostname alias",
+      "hint": "Letters, digits and dashes only. Leave empty to use the project slug.",
+      "save": "Save",
+      "toast": {
+        "saved": "Internal hostname updated",
+        "failed": "Couldn't update the internal hostname",
+        "invalid": "Enter at least one letter or digit"
+      }
+    }
+  },
+  "routeRules": {
+    "title": "Route rules",
+    "description": "Rate-limit, ban, and allow/deny rules enforced at the edge — applied instantly, no redeploy.",
+    "loading": "Loading rules…",
+    "empty": "No route rules yet. Add one below.",
+    "allHosts": "All hostnames",
+    "allPaths": "All paths",
+    "addTitle": "Add a rule",
+    "pathLabel": "Path prefix (optional)",
+    "rps": "Requests / sec",
+    "burst": "Burst",
+    "methods": "Allow only methods",
+    "banIps": "Ban IPs / CIDRs",
+    "banCountries": "Ban countries (ISO)",
+    "allowCountries": "Allow only countries (ISO)",
+    "denyCidrs": "Deny CIDRs",
+    "allowReferers": "Hotlink: allow referers",
+    "banUserAgents": "Ban user-agents (substring)",
+    "blockEmptyUa": "Block empty user-agent",
+    "blockStatus": "Block response code",
+    "add": "Add rule",
+    "remove": "Remove",
+    "enabled": "Enabled",
+    "disabled": "Disabled",
+    "saved": "Rule saved",
+    "saveFailed": "Failed to save rule",
+    "loadFailed": "Failed to load rules"
+  },
+  "backup": {
+    "live": {
+      "title": "Live backup",
+      "description": "Real-time progress for the run you just kicked off. Survives page refresh.",
+      "dismiss": "Dismiss"
+    },
+    "destinations": {
+      "title": "Backup destinations",
+      "description": "Per-user storage targets. Add S3-compatible buckets, SFTP servers, or local disks.",
+      "manage": "Manage",
+      "loading": "Loading…",
+      "emptyPrefix": "No destinations yet. ",
+      "emptyLink": "Create one",
+      "emptySuffix": " to start backing up.",
+      "verified": "Verified",
+      "failed": "Failed"
+    },
+    "services": {
+      "title": "Services + policies",
+      "description": "Each service can have its own backup policy (schedule + destination). Project-level defaults land in Chunk 2.",
+      "refresh": "Refresh",
+      "empty": "This project has no services yet. Service-level backups appear here once you add some.",
+      "policyLabel": "Policy:",
+      "manualOnly": "manual only",
+      "preDeploy": "pre-deploy",
+      "webhook": "webhook",
+      "noPolicy": "No policy",
+      "backupNow": "Backup now",
+      "editPolicy": "Edit policy",
+      "addDestinationFirst": "Add a destination first",
+      "createPolicyHint": "Create a backup policy for this service",
+      "createPolicy": "Create policy"
+    },
+    "recent": {
+      "title": "Recent backups",
+      "description": "The 25 most recent runs across all services in this project.",
+      "loading": "Loading…",
+      "empty": "No backups yet.",
+      "protectedTitle": "Protected from retention prune",
+      "protected": "Protected",
+      "restoreTitle": "Restore from this backup",
+      "allowPrune": "Allow retention to prune",
+      "protectFrom": "Protect from retention"
+    },
+    "toast": {
+      "runFailed": "Backup run failed",
+      "toggleProtectionFailed": "Failed to toggle protection"
+    }
+  },
+  "build": {
+    "edit": "Edit",
+    "webmail": {
+      "title": "Managed by openship",
+      "description": "Webmail uses a fixed build and start pipeline — install, build, and run commands are not configurable. Redeploy from the mail overview to pick up upstream changes."
+    },
+    "services": {
+      "title": "Per-service settings",
+      "descriptionTemplate": "This project has {serviceLabel}. Build commands, framework, ports, and run commands live on each service row — view and edit them in the Services tab.",
+      "open": "Open Services",
+      "subAppOne": "{count} sub-app",
+      "subAppOther": "{count} sub-apps",
+      "composeOne": "{count} compose service",
+      "composeOther": "{count} compose services",
+      "both": "{subApps} and {composeServices}"
+    },
+    "runtime": {
+      "title": "Runtime configuration",
+      "description": "Read-only. Edit through the deploy wizard so each change ships as a new version.",
+      "framework": "Framework",
+      "packageManager": "Package manager",
+      "runtimeIsolation": "Runtime isolation",
+      "runtimePort": "Runtime port",
+      "installCommand": "Install command",
+      "buildCommand": "Build command",
+      "noBuildStep": "No build step",
+      "outputDirectory": "Output directory",
+      "rootDirectory": "Root directory",
+      "composePath": "Compose File",
+      "startCommand": "Start command",
+      "staticNoServer": "Static (no server)",
+      "modeSandboxed": "Sandboxed (container)",
+      "modeDirect": "Direct (host process)",
+      "modeDefault": "Default (resolved at deploy)",
+      "modeStatic": "None — served as static files"
+    },
+    "storage": {
+      "title": "Persistent storage",
+      "description": "Paths kept when a new version replaces the old one. Everything else in the container is discarded on deploy.",
+      "edit": "Edit",
+      "save": "Save",
+      "cancel": "Cancel",
+      "saved": "Storage updated. It applies on the next deploy.",
+      "reset": "Use framework defaults",
+      "empty": "Nothing is kept between deploys.",
+      "inherited": "Framework defaults for this stack.",
+      "declared": "Set for this project.",
+      "placeholder": "storage\nuploads:/app/public/uploads",
+      "hint": "One per line. A bare path is relative to the app (storage), or give a full mount (name:/app/path, /host/path:/app/path)."
+    },
+    "objectStorage": {
+      "title": "Object storage",
+      "description": "An S3 bucket for uploads — survives redeploys and works with more than one replica, unlike a local path.",
+      "connect": "Connect",
+      "disconnect": "Disconnect",
+      "disconnected": "Object storage disconnected.",
+      "connected": "Bucket verified and connected. It applies on the next deploy.",
+      "loading": "Checking…",
+      "empty": "No bucket connected. Uploads stay on the container's disk.",
+      "sourceLabel": "Source",
+      "externalOption": "External provider",
+      "providerLabel": "Provider",
+      "bucketLabel": "Bucket",
+      "endpointLabel": "Endpoint",
+      "regionLabel": "Region",
+      "accessKeyLabel": "Access key ID",
+      "secretKeyLabel": "Secret access key",
+      "testAndConnect": "Test & connect",
+      "cancel": "Cancel",
+      "envLabel": "Variables",
+      "envHint": "Sets:",
+      "appliesOnDeploy": "Applied on the next deploy."
+    },
+    "env": {
+      "title": "Environment variables",
+      "description": "Encrypted at rest. Secrets stay masked — only the values you change are written.",
+      "edit": "Edit"
+    }
+  },
+  "envVars": {
+    "cancel": "Cancel",
+    "saveChanges": "Save changes",
+    "close": "Close",
+    "applyTitle": "Apply without a rebuild",
+    "applyText": "Saved. Apply these to the running service — it restarts with the new env, no clone or rebuild.",
+    "applyButton": "Apply (restart, no rebuild)",
+    "title": "Environment variables",
+    "description": "Production. Encrypted at rest. Secrets show as set — type to replace; leave blank to keep.",
+    "empty": "No environment variables yet.",
+    "keyPlaceholder": "KEY",
+    "secretPlaceholder": "•••••••• (set — type to replace)",
+    "valuePlaceholder": "value",
+    "hideValue": "Hide value",
+    "showValue": "Show value",
+    "markedSecret": "Marked secret",
+    "markSecret": "Mark as secret",
+    "removeVariable": "Remove variable",
+    "addVariable": "Add variable",
+    "toast": {
+      "loadFailed": "Failed to load environment variables",
+      "loadFailedTitle": "Error",
+      "validationTitle": "Validation",
+      "saved": "Environment variables saved",
+      "savedTitle": "Saved",
+      "saveFailed": "Failed to save environment variables",
+      "saveFailedTitle": "Save failed",
+      "applying": "Restarting the service with the new env — no rebuild.",
+      "applyingTitle": "Applying",
+      "applyFailed": "Couldn't apply the env to the running service",
+      "applyFailedTitle": "Apply failed"
+    },
+    "linkedBadge": "Linked",
+    "linkedManaged": "via {app}",
+    "linkedTitle": "Linked integration",
+    "linkedBody": "This value comes from the {app} connection. Manage it from that app — changes made here won't stick.",
+    "unlink": "Remove connection"
+  },
+  "gitInfo": {
+    "repository": "Repository",
+    "autoDeploy": "Auto-deploy",
+    "deploysOnPush": "Deploys on every push",
+    "manualOnly": "Manual deploys only",
+    "branchToDeploy": "Branch to Deploy",
+    "chooseBranch": "Choose which branch to deploy from your repository",
+    "save": "Save",
+    "cancel": "Cancel",
+    "viewOnGithub": "View on GitHub",
+    "recentCommits": "Recent Commits",
+    "totalCommits": "{count} total",
+    "noCommits": "No commits yet",
+    "toast": {
+      "fetchBranchesFailed": "Failed to fetch branches",
+      "errorTitle": "Error",
+      "branchUpdated": "Branch updated successfully",
+      "updatedTitle": "Updated",
+      "branchUpdateFailed": "Failed to update branch",
+      "autoDeployEnabled": "Auto-deploy enabled",
+      "autoDeployDisabled": "Auto-deploy disabled",
+      "autoDeployFailed": "Failed to update auto-deploy"
+    }
+  },
+  "git": {
+    "connectFirst": {
+      "title": "Connect GitHub first",
+      "description": "Link your GitHub account to connect a repository to this project.",
+      "connecting": "Connecting…",
+      "connect": "Connect GitHub"
+    },
+    "link": {
+      "title": "Link a Repository",
+      "description": "Connect a GitHub repository to enable webhook-triggered deployments.",
+      "select": "Select Repository"
+    },
+    "picker": {
+      "title": "Select a repository",
+      "description": "Choose a repository to link to this project",
+      "linking": "Linking repository…"
+    },
+    "appBanner": {
+      "title": "GitHub App not installed",
+      "description": "Install the Openship GitHub App on your account or organization to enable auto-deploy and webhook-triggered deployments for cloud projects.",
+      "install": "Install GitHub App"
+    },
+    "webhookBanner": {
+      "title": "Enable auto-deploy",
+      "description": "Auto-deploy needs a direct webhook endpoint. Expose this Openship API on a public URL or configure a verified webhook domain for direct delivery."
+    },
+    "source": {
+      "title": "Source Repository",
+      "description": "Git integration, deployment triggers, and repository health",
+      "repository": "Repository",
+      "open": "Open"
+    },
+    "webhookEndpoint": {
+      "title": "Webhook Endpoint",
+      "descriptionSet": "GitHub delivers push events directly to this domain",
+      "descriptionUnset": "Choose a domain for direct webhook delivery",
+      "updating": "Updating...",
+      "select": "Select domain...",
+      "clear": "Clear selection"
+    },
+    "autoDeployCard": {
+      "title": "Auto Deploy",
+      "enabled": "Enabled",
+      "disabled": "Disabled",
+      "descDelivers": "Pushes deliver to {domain}",
+      "descAuto": "Pushes trigger deployments automatically",
+      "descManual": "Deployments must be started manually"
+    },
+    "webhookCard": {
+      "title": "Webhook",
+      "direct": "Direct",
+      "active": "Active",
+      "inactive": "Inactive",
+      "descDirect": "Events deliver directly via {domain}",
+      "descActive": "Repository events are reaching Openship",
+      "descInactive": "Webhook has not been configured or is not responding"
+    },
+    "rollbackStrategy": {
+      "title": "Rollback strategy",
+      "rebuild": "Rebuild (git)",
+      "instant": "Instant (snapshot)",
+      "descRebuild": "Rebuilds the old commit, unless its image is still on the host.",
+      "descInstant": "Keeps every version's image, so a restore never rebuilds. Uses more disk.",
+      "toggleAria": "Toggle snapshot retention",
+      "keepNone": "Keep no extra copies",
+      "keepCopies": "Keep a copy per version",
+      "descRebuildFiles": "Rebuilds the old commit, unless its files are still on the host.",
+      "descInstantFiles": "Keeps every version's files, so a restore never rebuilds. Uses more disk."
+    },
+    "rollbackHistory": {
+      "title": "Rollback history",
+      "valueOne": "{count} version",
+      "valueOther": "{count} versions",
+      "descSnapshot": "Older versions are pruned to reclaim disk.",
+      "descGit": "Recent images are retained either way, so a rollback can skip the build.",
+      "decreaseAria": "Decrease rollback history",
+      "increaseAria": "Increase rollback history",
+      "sizeEach": "~{size} each",
+      "diskFree": "{size} free",
+      "autoBadge": "sized automatically",
+      "manualBadge": "set manually",
+      "kindFiles": "built files on disk",
+      "kindImages": "images on the host",
+      "descGitFiles": "Recent versions' files are retained either way, so a rollback can skip the build."
+    },
+    "commits": {
+      "title": "Recent Commits",
+      "subtitle": "Latest commits on {branch}",
+      "empty": "No commits found",
+      "emptyDesc": "Push to your repository and recent commit activity will appear here.",
+      "viewAll": "View all commits on GitHub"
+    },
+    "cloneToken": {
+      "title": "Clone Token Override",
+      "description": "Project-scoped token used by the clone module before falling back to your global token or the GitHub App",
+      "loading": "Loading…",
+      "explainer": "Paste a GitHub PAT here to use ONLY for this project. Highest priority in the clone chain - overrides your settings-level token and the GitHub App.",
+      "hide": "Hide token",
+      "show": "Show token",
+      "saveToken": "Save token",
+      "cancel": "Cancel",
+      "savedTitle": "Token saved for this project",
+      "lastUpdated": "Last updated {when}",
+      "justNow": "just now",
+      "replace": "Replace",
+      "clear": "Clear"
+    },
+    "toast": {
+      "pasteToken": "Paste a token before saving",
+      "cloneTokenTitle": "Clone token",
+      "tokenSaved": "Project clone token saved",
+      "tokenSaveFailed": "Failed to save token",
+      "tokenCleared": "Project clone token cleared",
+      "tokenClearFailed": "Failed to clear token",
+      "autoDeployEnabled": "Auto-deploy enabled",
+      "autoDeployDisabled": "Auto-deploy disabled",
+      "autoDeployFailed": "Failed to toggle auto-deploy",
+      "rollbackGit": "Rollback strategy: Git-driven (no snapshots)",
+      "rollbackSnapshot": "Rollback strategy: Snapshot (artifacts retained)",
+      "rollbackStrategyFailed": "Failed to update rollback strategy",
+      "rollbackWindowOne": "Keeping the last {count} version for rollback",
+      "rollbackWindowOther": "Keeping the last {count} versions for rollback",
+      "rollbackHistoryFailed": "Failed to update rollback history",
+      "webhookDomainSet": "Webhook domain set to {domain}",
+      "webhookDomainCleared": "Webhook domain cleared",
+      "webhookDomainFailed": "Failed to set webhook domain",
+      "linked": "Linked to {repo}",
+      "appNotInstalled": "GitHub App is not installed for this account",
+      "linkFailed": "Failed to link repository"
+    }
+  },
+  "logs": {
+    "noRuntime": "No runtime logs",
+    "noRuntimeDesc": "This project has no running server process and no domain, so there is nothing to stream. Add a domain and its edge request logs will appear here.",
+    "terminal": "Terminal",
+    "server": "Server",
+    "requests": "Requests",
+    "target": "Runtime log target",
+    "targetDescProject": "Switch between the project runtime and service runtimes.",
+    "targetDescService": "Switch between service runtimes.",
+    "projectRuntime": "Project runtime",
+    "selectService": "Select a service to view its runtime logs.",
+    "projectFallback": "Project"
+  },
+  "resources": {
+    "title": "Machine Power",
+    "description": "CPU and memory limits for this project's containers.",
+    "loading": "Reading the target machine…",
+    "machineCapacity": "Machine: {cpu} vCPU · {memory}",
+    "exceedsMachine": "Exceeds this machine",
+    "appliesOnNextDeploy": "Limits are applied when the container is recreated — redeploy for a change to take effect.",
+    "tiers": {
+      "unlimited": {
+        "name": "No limits",
+        "description": "Use the whole machine (default)",
+        "spec": "Machine capacity"
+      },
+      "micro": {
+        "name": "Micro",
+        "description": "Tiny sidecars and workers"
+      },
+      "low": {
+        "name": "Low",
+        "description": "Small apps and static sites"
+      },
+      "medium": {
+        "name": "Medium",
+        "description": "Most web applications"
+      },
+      "high": {
+        "name": "High",
+        "description": "High-traffic applications"
+      }
+    },
+    "custom": {
+      "name": "Custom",
+      "description": "Set your own limits",
+      "notSet": "Not set"
+    },
+    "customPanel": {
+      "boundedBy": "This machine has {cpu} vCPU and {memory}. Enter 0 for no limit.",
+      "capacityUnknown": "Could not read this machine's capacity, so no ceiling is enforced. Enter 0 for no limit.",
+      "cpuCores": "CPU cores",
+      "memory": "Memory (MB)",
+      "zeroMeansNoLimit": "0 = no limit",
+      "cancel": "Cancel",
+      "saving": "Saving…",
+      "save": "Save"
+    },
+    "toast": {
+      "updated": "Machine power updated",
+      "updateFailed": "Failed to update machine power",
+      "invalidValues": "CPU and memory must be 0 or a positive number"
+    }
+  },
+  "sleep": {
+    "title": "Machine Mode",
+    "description": "Control availability and cost efficiency",
+    "autoSleep": "Auto Sleep",
+    "recommended": "RECOMMENDED",
+    "autoSleepDesc": "Stops when idle, wakes instantly",
+    "autoSleepMeta": "Cost-efficient • No cold start",
+    "alwaysOn": "Always On",
+    "alwaysOnDesc": "Container never stops",
+    "alwaysOnMeta": "Maximum availability • Higher cost",
+    "infoTitle": "How Auto Sleep works",
+    "infoBefore": "When there are requests, your container stays running. After inactivity, it sleeps to save costs. On the next request, it wakes up ",
+    "infoEmphasis": "instantly",
+    "infoAfter": " - no cold start delays.",
+    "toast": {
+      "updated": "Sleep mode updated successfully",
+      "updateFailed": "Failed to update sleep mode"
+    }
+  },
+  "deleteDialog": {
+    "title": "Delete Project",
+    "bodyPrefix": "Are you sure you want to delete ",
+    "bodySuffix": "? This action cannot be undone and will permanently delete all project data, deployments, and settings.",
+    "cancel": "Cancel",
+    "delete": "Delete Project"
+  },
+  "deletion": {
+    "title": "Delete project",
+    "cannotUndo": "This action cannot be undone.",
+    "aboutToPrefix": "You are about to delete ",
+    "aboutToSuffix": ".",
+    "deleteAllAria": "Delete all environments",
+    "deleteAll": "Delete all environments",
+    "deleteAllOn": "Removes the project app and every branch environment under it.",
+    "deleteAllOff": "Removes only this environment. Other branches stay.",
+    "scanning": "Scanning attached services and volumes…",
+    "wipeAria": "Also wipe service data",
+    "wipeLabelOne": "Also wipe service data ({count} volume)",
+    "wipeLabelOther": "Also wipe service data ({count} volumes)",
+    "wipeOn": "Volumes will be permanently removed - database contents, caches, uploads, everything stored by these services will be gone.",
+    "wipeOff": "Off: containers are removed but their named volumes stay on disk. Re-attach them later by name.",
+    "appData": "App data",
+    "volOne": "{count} vol",
+    "volOther": "{count} vols",
+    "amberWipe": "All deployments, domains, env vars, and persistent service data will be permanently removed.",
+    "amberNoWipe": "All deployments, domains, env vars, and analytics will be permanently removed.",
+    "typePrefix": "Type ",
+    "typeSuffix": " to confirm.",
+    "cancel": "Cancel",
+    "confirmDeleteWipe": "Delete + wipe data",
+    "confirmDeleteEnvWipe": "Delete environment + wipe data",
+    "confirmDelete": "Delete project",
+    "confirmDeleteEnv": "Delete environment",
+    "recordOnlyLabel": "Remove from Openship only",
+    "recordOnlyDesc": "Keeps the app and its data running on your server — only the Openship record is removed. You can re-import it later.",
+    "recordOnlyReversible": "Reversible — the app stays on your server.",
+    "recordOnlyNote": "Nothing on the server is touched — the app keeps running with its data. Only Openship's record is removed, and it can be re-imported later.",
+    "confirmRecordOnly": "Remove record",
+    "linkedTitleOne": "{count} project is connected to this app",
+    "linkedTitleOther": "{count} projects are connected to this app",
+    "linkedNote": "They keep running with their data untouched — they only lose this connection. Redeploy them to pick that up.",
+    "linkedNoteRecordOnly": "They keep running, but the link goes with the record — re-importing this app later won't restore it."
+  },
+  "routing": {
+    "title": "Routing",
+    "description": "Rewrites, redirects & headers. Applied on save — no rebuild.",
+    "saving": "Saving…",
+    "save": "Save",
+    "summaryNone": "None configured",
+    "summaryActive": "Configured",
+    "toast": {
+      "title": "Routing",
+      "updated": "Routing updated — applied to the live deployment.",
+      "failed": "Failed to update routing"
+    }
+  },
+  "domains": {
+    "status": {
+      "verified": "Verified",
+      "active": "Active",
+      "failed": "Failed",
+      "removing": "Removing",
+      "pending": "Pending"
+    },
+    "ssl": {
+      "includedByHost": "Included by host",
+      "active": "Active",
+      "provisioning": "Provisioning",
+      "expired": "Expired",
+      "error": "Error",
+      "inactive": "Inactive",
+      "external": "External TLS",
+      "manual": "Manual cert"
+    },
+    "typeCustom": "Custom domain",
+    "typeFree": "Free subdomain",
+    "primaryDomainTitle": "Primary domain",
+    "domainNTitle": "Domain {n}",
+    "portLabel": "Port {port}",
+    "noPortSelected": "No port selected",
+    "meta": {
+      "accessTitle": "Access URL",
+      "accessSubtitle": "Local development endpoint",
+      "local": "Local",
+      "availableOnMachine": "Available on this machine",
+      "primaryTitle": "Primary Domain",
+      "primaryAcross": "Primary route across {count} domains",
+      "hostManaged": "Host-managed production URL",
+      "customProduction": "Custom production domain"
+    },
+    "route": {
+      "disabled": "Disabled",
+      "routePaused": "Route paused",
+      "serviceDisabled": "Service disabled",
+      "internal": "Internal",
+      "notExposed": "Not exposed",
+      "public": "Public"
+    },
+    "actions": {
+      "visit": "Visit",
+      "editDomains": "Edit domains",
+      "hideSetup": "Hide setup",
+      "addDomain": "Add domain"
+    },
+    "add": {
+      "title": "Add domain",
+      "description": "Add a route: pick a free or custom domain and the port it maps to.",
+      "free": "Free subdomain",
+      "custom": "Custom domain",
+      "domainName": "Domain name",
+      "subdomain": "Subdomain",
+      "customPlaceholder": "yourdomain.com",
+      "defaultAppName": "my-app",
+      "mapsToPort": "Maps to port",
+      "servesPath": "Serves path",
+      "servesPathHint": "Requests to this domain are served from this path in your build output.",
+      "servesPathRedeploy": "New paths take effect on your next deploy.",
+      "includeWww": "Include www",
+      "includeWwwDesc": "Also generate records for www.{domain}",
+      "includeWwwFallback": "yourdomain.com",
+      "externalIngress": "External ingress & TLS",
+      "externalIngressDesc": "TLS terminates upstream (Cloudflare Tunnel, load balancer). Verify by TXT only — the domain need not point at this server, and we won't issue a certificate.",
+      "noWww": "That domain is already on this project.",
+      "adding": "Adding...",
+      "submit": "Add domain"
+    },
+    "dns": {
+      "title": "DNS Records",
+      "descPreview": "Add these records at your DNS provider, then click Add domain to attach it",
+      "descApply": "Apply these records at your DNS provider, then wait for propagation",
+      "infoPreview": "Add these records first — they don't change after adding, so propagation starts now. Then press Add domain to attach it, and finally Verify once DNS resolves.",
+      "infoApply": "DNS changes can take up to 48 hours to propagate globally. Once the records resolve, click Verify below — we'll check DNS, mark the domain active, and provision SSL in the background.",
+      "verifying": "Verifying...",
+      "verify": "Verify {hostname}"
+    },
+    "records": {
+      "toggle": "DNS records",
+      "hint": "Add these at your DNS provider, then click Verify.",
+      "loading": "Loading records…",
+      "none": "No records to add for this domain."
+    },
+    "verifyMissing": {
+      "both": "Neither the CNAME nor the TXT record is resolving yet — add the records below, wait for DNS to propagate, then Verify.",
+      "cname": "The CNAME record isn't resolving yet — add it below, wait for DNS to propagate, then Verify.",
+      "txt": "The TXT verification record isn't resolving yet — add it below, wait for DNS to propagate, then Verify."
+    },
+    "portHint": {
+      "body": "Nothing responded on port {port} — requests may 502 until the app listens there.",
+      "bodyService": "Service \"{service}\": nothing responded on port {port} — requests may 502 until it listens there."
+    },
+    "outputHint": {
+      "body": "No build output found at {path} — check your Output Directory and redeploy."
+    },
+    "overview": {
+      "primary": "Primary",
+      "mappedTo": "Mapped to",
+      "redirect": "Redirect",
+      "redirectValue": "{status} → {hostname}",
+      "status": "Status",
+      "ssl": "SSL",
+      "visit": "Visit"
+    },
+    "cold": {
+      "localUrl": "Local URL",
+      "type": "Type",
+      "status": "Status"
+    },
+    "edit": {
+      "title": "Edit domains",
+      "descServer": "Edit which internal port each domain should route to.",
+      "descStatic": "Edit which static path each domain should serve.",
+      "cancel": "Cancel",
+      "saving": "Saving...",
+      "save": "Save changes"
+    },
+    "addRoute": {
+      "cancel": "Cancel",
+      "add": "Add route",
+      "free": "Free subdomain",
+      "custom": "Custom domain",
+      "customPlaceholder": "app.example.com",
+      "defaultServiceName": "my-service",
+      "port": "Port",
+      "portPlaceholder": "8080",
+      "submit": "Add",
+      "loading": "Loading routes...",
+      "emptyPrefix": "No domains yet. Click ",
+      "emptyAction": "Add route",
+      "emptySuffix": " to point a domain at a service's port."
+    },
+    "editRoute": {
+      "title": "Edit route",
+      "internalOnly": "Internal only",
+      "close": "Close",
+      "disabledWarning": "Service is disabled - routes are inactive until the service is re-enabled.",
+      "save": "Save changes"
+    },
+    "menu": {
+      "editRoute": "Edit route",
+      "settingPrimary": "Setting primary...",
+      "setPrimary": "Set as primary",
+      "verifying": "Verifying...",
+      "verify": "Verify",
+      "renewing": "Renewing...",
+      "renewSsl": "Renew SSL",
+      "rechecking": "Rechecking...",
+      "recheckSsl": "Recheck SSL",
+      "uploadCert": "Upload certificate"
+    },
+    "certUpload": {
+      "title": "Upload certificate",
+      "desc": "Serve TLS from your own certificate (bring-your-own or Cloudflare Origin CA) instead of Let's Encrypt. Use this when an upstream proxy fronts this domain and the origin still needs a real cert (Cloudflare Full-strict). Certbot is disabled for this domain once a certificate is uploaded — renew by uploading a new one.",
+      "certLabel": "Certificate (fullchain PEM)",
+      "certPlaceholder": "-----BEGIN CERTIFICATE-----",
+      "keyLabel": "Private key (PEM)",
+      "keyPlaceholder": "-----BEGIN PRIVATE KEY-----",
+      "submit": "Install certificate",
+      "submitting": "Installing...",
+      "close": "Cancel"
+    },
+    "toast": {
+      "enterPort": "Enter the port this domain should route to (1–65535).",
+      "addDomainTitle": "Add domain",
+      "addDomainFailed": "Failed to add domain",
+      "addDomainFailedTitle": "Add domain failed",
+      "addedCustom": "{label} added — apply the DNS records, then Verify.",
+      "addedFree": "{label} added.",
+      "copied": "Copied to clipboard",
+      "verifiedSuccess": "{hostname} verified — SSL is provisioning in the background.",
+      "verifiedTitle": "Domain verified",
+      "verifyNotYet": "{hostname} could not be verified yet.",
+      "verifyFailedTitle": "Verification failed",
+      "verifyFailed": "Failed to verify domain.",
+      "sslRenewed": "SSL renewed for {hostname}.",
+      "sslRenewFailed": "Failed to renew SSL for {hostname}.",
+      "sslTitle": "SSL",
+      "sslVerified": "SSL verified for {hostname}.",
+      "sslNoCert": "No valid certificate found for {hostname} yet. If you just deployed, give Let's Encrypt a moment, then recheck.",
+      "sslRecheckFailed": "Failed to recheck SSL for {hostname}.",
+      "certUploaded": "Certificate installed for {hostname}.",
+      "certUploadFailed": "Failed to install certificate for {hostname}.",
+      "completeEndpoints": "Complete every domain and mapped port before saving",
+      "domainsTitle": "Domains",
+      "routingUpdated": "Domain routing updated",
+      "routingUpdateFailed": "Failed to update domain routing",
+      "primaryUpdated": "Primary domain updated",
+      "setPrimaryFailed": "Failed to set primary domain",
+      "routeUpdateFailed": "Failed to update service route",
+      "publishing": "Publishing — deploying to install the edge and apply your domain…",
+      "publishFailed": "Domain saved, but the deploy didn't start — redeploy to publish it.",
+      "enterPortShort": "Enter the port this domain should route to.",
+      "noServicePort": "No service publishes port {port}. Add that port to a service first.",
+      "enterCustom": "Enter a custom domain.",
+      "enterSubdomain": "Enter a subdomain."
+    },
+    "edge": {
+      "setUp": "Set up edge",
+      "ready": "Edge ready",
+      "checking": "Checking edge…",
+      "recheck": "Re-check",
+      "foreignProxyHint": "Another proxy holds 80/443"
+    },
+    "diagnosis": {
+      "title": "Why this isn't working",
+      "noneYet": "No check has run yet, so there's no result to show. Add the DNS records shown for this domain, then run Verify.",
+      "attempts": "{count} failed attempt(s) so far.",
+      "pillHint": "Show why"
+    }
+  }
+}

@@ -1,0 +1,343 @@
+"use client";
+
+import { useState, useEffect, useCallback } from "react";
+import { BlurIp } from "@/components/BlurIp";
+import {
+  Server,
+  CheckCircle2,
+  ChevronDown,
+  Plus,
+  Loader2,
+} from "lucide-react";
+import { systemApi, type ServerInfo } from "@/lib/api/system";
+import { useI18n } from "@/components/i18n-provider";
+import { useAddServerModal } from "@/components/servers/add-server-modal";
+
+/* ── Types ──────────────────────────────────────────────────────────── */
+
+export interface ServerOption {
+  id: string;
+  name: string;
+  host: string;
+  user: string;
+  port: number;
+  raw: ServerInfo;
+}
+
+export interface ServerSelectorProps {
+  /** Called when a server is selected (or null when deselected) */
+  onSelect: (server: ServerOption | null) => void;
+  /** Currently selected server id */
+  value?: string | null;
+  /** Label above the selector */
+  label?: string;
+  /** Disable interaction */
+  disabled?: boolean;
+  /** Show compact variant (no label) */
+  compact?: boolean;
+  /** Open the dropdown upward (for selectors pinned near the bottom of a modal). */
+  dropUp?: boolean;
+  /**
+   * Pre-select the first server on load even when there are several (nothing
+   * chosen yet). A lone server always auto-selects; this extends that to the
+   * "many servers" case so an install wizard opens with a destination already
+   * picked. Off by default — flows that must not guess (adopt / migrate) skip it.
+   */
+  autoSelectFirst?: boolean;
+}
+
+/* ── Helpers ────────────────────────────────────────────────────────── */
+
+function serverInfoToOption(s: ServerInfo): ServerOption {
+  return {
+    id: s.id,
+    name: s.name || s.sshHost,
+    host: s.sshHost,
+    user: s.sshUser || "root",
+    port: s.sshPort ?? 22,
+    raw: s,
+  };
+}
+
+/* ── Component ──────────────────────────────────────────────────────── */
+
+export default function ServerSelector({
+  onSelect,
+  value,
+  label,
+  disabled = false,
+  compact = false,
+  dropUp = false,
+  autoSelectFirst = false,
+}: ServerSelectorProps) {
+  const { t } = useI18n();
+  const w = t.widgets.shared.serverSelector;
+  const labelText = label ?? w.serverLabel;
+  const [servers, setServers] = useState<ServerOption[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [open, setOpen] = useState(false);
+  const openAddServer = useAddServerModal();
+
+  const fetchServers = useCallback(async () => {
+    try {
+      setLoading(true);
+      const list = await systemApi.listServers();
+      if (list.length > 0) {
+        const opts = list.map(serverInfoToOption);
+        setServers(opts);
+        // Auto-select the lone server, or the first one when the caller asked
+        // for a default and nothing's chosen yet (captured initial `value`).
+        if (opts.length === 1 || (autoSelectFirst && !value)) onSelect(opts[0]);
+      } else {
+        setServers([]);
+        onSelect(null);
+      }
+    } catch {
+      setServers([]);
+      onSelect(null);
+    } finally {
+      setLoading(false);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // onSelect intentionally excluded - same-cb identity contract as before
+
+  useEffect(() => {
+    fetchServers();
+  }, [fetchServers]);
+
+  // Adding a server never leaves the flow: the panel opens on top, and the
+  // saved row is spliced in and selected so the caller can carry straight on.
+  // createServerEntry returns the full row, so no refetch is needed.
+  const addServer = useCallback(() => {
+    openAddServer((created: ServerInfo) => {
+      const opt = serverInfoToOption(created);
+      setServers((prev) => (prev.some((p) => p.id === opt.id) ? prev : [...prev, opt]));
+      onSelect(opt);
+    });
+  }, [openAddServer, onSelect]);
+
+  const selected = servers.find((s) => s.id === value) ?? null;
+
+  /* ── Loading state ─────────────────────────────────────────────────── */
+
+  if (loading) {
+    return (
+      <div className={compact ? "" : "mb-5"}>
+        {!compact && (
+          <label className="block text-sm font-medium text-foreground mb-1.5">
+            {labelText}
+          </label>
+        )}
+        <div className="flex items-center gap-3 px-3.5 py-3 rounded-xl border border-border/50 bg-muted/20">
+          <Loader2 className="size-4 animate-spin text-muted-foreground" />
+          <span className="text-sm text-muted-foreground">{w.loadingServers}</span>
+        </div>
+      </div>
+    );
+  }
+
+  /* ── No servers - empty state ──────────────────────────────────────── */
+
+  if (servers.length === 0) {
+    // Compact hosts (picker rows inside wizards and modals) get a single
+    // clickable row instead of a full-height hero — same action, no layout jump.
+    if (compact) {
+      return (
+        <button
+          type="button"
+          onClick={addServer}
+          disabled={disabled}
+          className="w-full flex items-center gap-3 px-3.5 py-3 rounded-xl border border-dashed border-border text-start transition-colors hover:bg-muted/20 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center shrink-0">
+            <Plus className="size-4 text-muted-foreground" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-foreground">{w.addServer}</p>
+            <p className="text-xs text-muted-foreground truncate">{w.noServerConnected}</p>
+          </div>
+        </button>
+      );
+    }
+
+    return (
+      <div className="flex items-center justify-center py-16">
+        <div className="max-w-sm w-full text-center">
+          <div className="mx-auto w-12 h-12 rounded-2xl bg-muted/60 flex items-center justify-center mb-4">
+            <Server className="size-5 text-muted-foreground/60" />
+          </div>
+          <h3 className="text-base font-medium text-foreground mb-1.5">
+            {w.noServerConnected}
+          </h3>
+          <p className="text-sm text-muted-foreground leading-relaxed mb-5">
+            {w.connectServerFirst}
+          </p>
+          <button
+            type="button"
+            onClick={addServer}
+            disabled={disabled}
+            className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary text-primary-foreground text-sm font-medium rounded-xl hover:bg-primary/90 transition-all hover:shadow-lg hover:shadow-primary/25 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Plus className="size-4" />
+            {w.addServer}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  /* ── Single server - auto-selected, still re-selectable ────────────── */
+
+  if (servers.length === 1) {
+    const s = servers[0];
+    // `value === undefined` = uncontrolled caller, so the auto-pick above stands.
+    // An explicit `null` means the caller moved the selection somewhere else (the
+    // app picker switching to Openship Cloud), so the row reads unselected — and
+    // must stay clickable: as a static div the lone server became unreachable the
+    // moment it was deselected, making the destination choice one-way.
+    const isSelected = value === undefined || value === s.id;
+    return (
+      <div className={compact ? "" : "mb-5"}>
+        {!compact && (
+          <label className="block text-sm font-medium text-foreground mb-1.5">
+            {labelText}
+          </label>
+        )}
+        <button
+          type="button"
+          onClick={() => !disabled && onSelect(s)}
+          disabled={disabled}
+          aria-pressed={isSelected}
+          className={`w-full flex items-center gap-3 px-3.5 py-3 rounded-xl border border-border/50 text-start transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+            isSelected ? "bg-muted/30" : "bg-background hover:bg-muted/20"
+          }`}
+        >
+          <div
+            className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${isSelected ? "bg-success-bg" : "bg-muted"}`}
+          >
+            <Server className={`size-4 ${isSelected ? "text-success" : "text-muted-foreground"}`} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-foreground truncate">{s.name}</p>
+            <p className="text-xs text-muted-foreground">
+              {s.user}@<BlurIp>{s.host}</BlurIp>:{s.port}
+            </p>
+          </div>
+          {isSelected ? (
+            <CheckCircle2 className="size-4 text-success shrink-0" />
+          ) : (
+            <span className="size-4 rounded-full border border-border shrink-0" aria-hidden />
+          )}
+        </button>
+        {/* One server is not a closed set — the second one has to be reachable
+            from here too, or adding it means abandoning the flow. */}
+        <button
+          type="button"
+          onClick={addServer}
+          disabled={disabled}
+          className="mt-1.5 inline-flex items-center gap-1.5 px-1 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <Plus className="size-3.5" />
+          {w.addNewServer}
+        </button>
+      </div>
+    );
+  }
+
+  /* ── Multiple servers - dropdown ───────────────────────────────────── */
+
+  return (
+    <div className={compact ? "" : "mb-5"}>
+      {!compact && (
+        <label className="block text-sm font-medium text-foreground mb-1.5">
+          {label}
+        </label>
+      )}
+      <div className="relative">
+        <button
+          type="button"
+          onClick={() => !disabled && setOpen(!open)}
+          disabled={disabled}
+          className="w-full flex items-center gap-3 px-3.5 py-3 rounded-xl border border-border/50 bg-background hover:bg-muted/20 transition-colors text-start disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {selected ? (
+            <>
+              <div className="w-8 h-8 rounded-lg bg-success-bg flex items-center justify-center shrink-0">
+                <Server className="size-4 text-success" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-foreground truncate">
+                  {selected.name}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {selected.user}@<BlurIp>{selected.host}</BlurIp>:{selected.port}
+                </p>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center shrink-0">
+                <Server className="size-4 text-muted-foreground" />
+              </div>
+              <span className="text-sm text-muted-foreground">{w.selectServer}</span>
+            </>
+          )}
+          <ChevronDown
+            className={`size-4 text-muted-foreground shrink-0 transition-transform ${open ? "rotate-180" : ""}`}
+          />
+        </button>
+
+        {open && (
+          <div
+            className={`absolute z-50 start-0 end-0 max-h-64 overflow-auto rounded-xl border border-border bg-popover shadow-lg ${
+              dropUp ? "bottom-full mb-1.5" : "mt-1.5"
+            }`}
+          >
+            {servers.map((s) => (
+              <button
+                key={s.id}
+                type="button"
+                onClick={() => {
+                  onSelect(s);
+                  setOpen(false);
+                }}
+                className={`w-full flex items-center gap-3 px-3.5 py-3 text-start transition-colors hover:bg-muted/40 ${
+                  value === s.id ? "bg-muted/30" : ""
+                }`}
+              >
+                <div className="w-8 h-8 rounded-lg bg-success-bg flex items-center justify-center shrink-0">
+                  <Server className="size-4 text-success" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-foreground truncate">{s.name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {s.user}@<BlurIp>{s.host}</BlurIp>:{s.port}
+                  </p>
+                </div>
+                {value === s.id && (
+                  <CheckCircle2 className="size-4 text-success shrink-0" />
+                )}
+              </button>
+            ))}
+
+            <div className="border-t border-border/50">
+              <button
+                type="button"
+                onClick={() => {
+                  setOpen(false);
+                  addServer();
+                }}
+                className="w-full flex items-center gap-3 px-3.5 py-3 text-start transition-colors hover:bg-muted/40"
+              >
+                <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center shrink-0">
+                  <Plus className="size-4 text-muted-foreground" />
+                </div>
+                <span className="text-sm text-muted-foreground">{w.addNewServer}</span>
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
