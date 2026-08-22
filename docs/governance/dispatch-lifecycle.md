@@ -42,6 +42,7 @@ CLAIMED/IN_REVIEW ──base 漂移──▶ REBIND ──维护者裁决──�
 | 从 → 到 | 客观触发条件 | 操作角色 | 必需凭证 |
 | --- | --- | --- | --- |
 | DISPATCHED → CLAIMED | 发布合规 `/claim`（身份、计划分支、expected head 三要素齐备），且发布时 remote `main` == expected head | 执行者 | E1 + E4（`git ls-remote` 输出） |
+| DISPATCHED → BLOCKED | 派发时前置依赖即未满足（台账行非 UNBLOCKED 等价状态） | 维护者 | E5 |
 | CLAIMED → BLOCKED | 任一依赖经台账核验为未满足 | 执行者 / 维护者 | E5 |
 | BLOCKED → 原状态 | 依赖解除有核验输出证明；期间 base 若漂移 must 先走 REBIND | 执行者 | E4 / E5 |
 | CLAIMED → IN_REVIEW | Draft PR 开立且回链 issue，交付物草稿齐备 | 执行者 | E2 |
