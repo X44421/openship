@@ -43,7 +43,7 @@
 | B8 | `apps/dashboard/src/hooks/useAttentionFeed.ts` / `usePtyConnection.ts` / `useInfraFleet.ts` 等 6 文件 | 本地持久化 | 浏览器本地存储使用点；`theme-provider` / `monitoring/VisitorMap` / `CollapsibleCard` 属 UI 偏好（可 retain），前三个存在业务数据缓存嫌疑 | D0 盘点逐文件裁决；新客户端规则：仅 UI 偏好可入本地存储，业务数据一律服务端权威 |
 | B9 | 状态机 | 显式转移表 | `ALLOWED_TRANSITIONS` / `canTransition` 类模式定向搜索零命中 | openship 原型无显式 TS 状态机表；风险集中在 §3.1 执行器而非状态编码 |
 | B10 | `apps/api/package.json` | 服务端栈事实 | hono ^4.12 + better-auth ^1.5（drizzle adapter）+ bullmq ^5.70 + ioredis ^5.10 + typebox 校验 | FE5-D2 退役对象的依赖图根；记录供 FE0-C2 拓扑与 FE0-D0 盘点引用 |
-| B11 | `apps/desktop` | 桌面壳现状 | `main: dist/main/index.js`，运行时依赖仅 `@repo/core`、`@repo/onboarding` | 无成熟壳框架痕迹；壳选型归 FE4-D1，此处仅记录现状 |
+| B11 | `apps/desktop` | 桌面壳现状 | **Electron** + electron-forge 打包链（electron / electronmon / @electron-forge/{cli,maker-deb,dmg,rpm,squirrel,zip} 在 devDependencies）；runtime deps 仅 @repo/core、@repo/onboarding；description 自述「Electron wrapper for the deployed…」即加载已部署 dashboard | **勘误（FE0-D0 发现）**：初版误判「无成熟壳框架痕迹」，系仅检视 runtime deps 所致；壳重定义仍归 FE4-D1 |
 
 ### 3.4 扫描方法
 
