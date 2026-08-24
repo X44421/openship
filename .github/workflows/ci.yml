@@ -21,6 +21,20 @@ concurrency:
 # unmergeable forever with no visible reason.
 
 jobs:
+  # FE1-S1 (#19): frozen topology guard (docs/issues/issue-013-package-topology-contract.md §2)
+  # plus the no-clean-engine-imports canonical-recalculation ban
+  # (docs/issues/issue-011-client-authority-boundary-contract.md §4).
+  # Zero-dependency pure Node, so it runs before any install and fails closed.
+  boundaries:
+    name: Dependency boundaries
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Check workspace dependency boundaries
+        run: node scripts/check-dependency-boundaries.mjs
+
   typecheck:
     name: Typecheck
     runs-on: ubuntu-latest
