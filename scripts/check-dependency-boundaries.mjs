@@ -10,10 +10,18 @@
 //
 // Usage: node scripts/check-dependency-boundaries.mjs
 //
+// Import extraction is a lexical scanner (strings/comments skipped, keywords
+// matched at identifier boundaries), so legal multi-line static imports and
+// `from "…"` clauses spanning lines are captured — not just same-line imports.
+// AST-exact coverage is layered on top by the ESLint boundary rules
+// (eslint.config.mjs: `no-restricted-imports` edge set + the local
+// `no-clean-engine-imports` rule).
+//
 // Scope discipline: legacy (@repo/*) inter-package dependencies are existing
 // stock consumed slice-by-slice by retirement tasks (FE5 series) and are NOT
-// evaluated here — except the clean-engine subtree ban, which applies
-// everywhere outside packages/core itself, tests included.
+// evaluated here — except the clean-engine subtree ban (applies everywhere
+// outside packages/core itself, tests included) and hard bans on any NEW
+// dependency from the @stillflow/* packages onto legacy members.
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -53,6 +61,204 @@ const ALLOWED_NEW_EDGES = new Set([
   "@stillflow/studio-ui>@stillflow/contracts",
   "@stillflow/dev-fixtures>@stillflow/contracts",
 ]);
+
+// ---------------------------------------------------------------------------
+// Lexical import scanner
+// ---------------------------------------------------------------------------
+
+function isWordChar(character) {
+  return character !== undefined && /[A-Za-z0-9_$]/.test(character);
+}
+
+/** Skips whitespace and comments from `index`; returns next token position. */
+function skipWhitespaceAndComments(text, index) {
+  const n = text.length;
+  let i = index;
+  for (;;) {
+    while (i < n && /\s/.test(text[i])) i += 1;
+    if (text[i] === "/" && text[i + 1] === "/") {
+      while (i < n && text[i] !== "\n") i += 1;
+      continue;
+    }
+    if (text[i] === "/" && text[i + 1] === "*") {
+      i += 2;
+      while (i + 1 < n && !(text[i] === "*" && text[i + 1] === "/")) i += 1;
+      i = Math.min(i + 2, n);
+      continue;
+    }
+    return i;
+  }
+}
+
+/** Skips a string literal starting at `start`; returns index after it. */
+function skipString(text, start) {
+  const quote = text[start];
+  const n = text.length;
+  let i = start + 1;
+  while (i < n) {
+    if (text[i] === "\\") {
+      i += 2;
+      continue;
+    }
+    if (text[i] === quote) return i + 1;
+    i += 1;
+  }
+  return n;
+}
+
+/** Reads a single/double-quoted literal at `index`; null when not a quote. */
+function readQuoted(text, index) {
+  const quote = text[index];
+  if (quote !== '"' && quote !== "'") return null;
+  const n = text.length;
+  let i = index + 1;
+  while (i < n) {
+    if (text[i] === "\\") {
+      i += 2;
+      continue;
+    }
+    if (text[i] === quote) return { value: text.slice(index + 1, i), offset: i - index + 1 };
+    i += 1;
+  }
+  return null;
+}
+
+/**
+ * Searches from `start` for the `from` keyword of an import/export statement.
+ * Returns -1 when a statement boundary (`;`) or a plainly non-import keyword
+ * is met first. String/comment content is skipped.
+ */
+function findFromKeyword(text, start) {
+  const n = text.length;
+  let i = start;
+  const bailKeywords = new Set([
+    "const", "let", "var", "return", "if", "else", "for", "while", "function", "class",
+    "default", "async", "await", "new", "typeof", "throw", "switch", "case",
+  ]);
+  while (i < n) {
+    const character = text[i];
+    if (character === '"' || character === "'" || character === "`") {
+      i = skipString(text, i);
+      continue;
+    }
+    if (character === "/" && text[i + 1] === "/") {
+      while (i < n && text[i] !== "\n") i += 1;
+      continue;
+    }
+    if (character === "/" && text[i + 1] === "*") {
+      i += 2;
+      while (i + 1 < n && !(text[i] === "*" && text[i + 1] === "/")) i += 1;
+      i = Math.min(i + 2, n);
+      continue;
+    }
+    if (character === ";") return -1;
+    if (/[A-Za-z_$]/.test(character)) {
+      const previous = i > 0 ? text[i - 1] : "";
+      if (!isWordChar(previous)) {
+        let j = i + 1;
+        while (j < n && /[A-Za-z0-9_$]/.test(text[j])) j += 1;
+        const word = text.slice(i, j);
+        if (word === "from") return i;
+        if (bailKeywords.has(word)) return -1;
+        i = j;
+        continue;
+      }
+    }
+    i += 1;
+  }
+  return -1;
+}
+
+function lineNumberAt(text, index) {
+  let line = 1;
+  for (let i = 0; i < index && i < text.length; i += 1) {
+    if (text[i] === "\n") line += 1;
+  }
+  return line;
+}
+
+/**
+ * Extracts import specifiers with their 1-based line numbers. Covers:
+ *   - `import X from "…"`, `import { … } from "…"`, `import type { … } from "…"`
+ *   - `import "…"` side effects, `export * from "…"`, `export { … } from "…"`
+ *   - dynamic `import("…")` and `require("…")`
+ * Multi-line statements are handled because scanning is lexical, not line-based.
+ * Known limitation (documented): template-literal interpolation containing a
+ * dynamic import is skipped with the template; AST-exact coverage is provided
+ * by the ESLint boundary rules layered on top.
+ */
+function extractImportSpecifiers(sourceText) {
+  const specifiers = [];
+  const n = sourceText.length;
+  let i = 0;
+  while (i < n) {
+    const character = sourceText[i];
+
+    if (character === '"' || character === "'" || character === "`") {
+      i = skipString(sourceText, i);
+      continue;
+    }
+    if (character === "/" && sourceText[i + 1] === "/") {
+      while (i < n && sourceText[i] !== "\n") i += 1;
+      continue;
+    }
+    if (character === "/" && sourceText[i + 1] === "*") {
+      i += 2;
+      while (i + 1 < n && !(sourceText[i] === "*" && sourceText[i + 1] === "/")) i += 1;
+      i = Math.min(i + 2, n);
+      continue;
+    }
+
+    if (/[A-Za-z_$]/.test(character)) {
+      const previous = i > 0 ? sourceText[i - 1] : "";
+      if (isWordChar(previous)) {
+        i += 1;
+        continue;
+      }
+      let j = i + 1;
+      while (j < n && /[A-Za-z0-9_$]/.test(sourceText[j])) j += 1;
+      const word = sourceText.slice(i, j);
+
+      if (word === "import" || word === "export" || word === "require") {
+        const next = skipWhitespaceAndComments(sourceText, j);
+        const nextCharacter = sourceText[next];
+
+        if (nextCharacter === "(" && word !== "export") {
+          // dynamic import("…") / require("…")
+          const literalStart = skipWhitespaceAndComments(sourceText, next + 1);
+          const literal = readQuoted(sourceText, literalStart);
+          if (literal) {
+            specifiers.push({
+              specifier: literal.value,
+              line: lineNumberAt(sourceText, literalStart),
+            });
+          }
+        } else if (word === "import" && (nextCharacter === '"' || nextCharacter === "'")) {
+          // side-effect import "…"
+          const literal = readQuoted(sourceText, next);
+          if (literal) specifiers.push({ specifier: literal.value, line: lineNumberAt(sourceText, next) });
+        } else {
+          // import { … } from / export { … } from / export * from
+          const fromIndex = findFromKeyword(sourceText, next);
+          if (fromIndex !== -1) {
+            const literalStart = skipWhitespaceAndComments(sourceText, fromIndex + 4);
+            const literal = readQuoted(sourceText, literalStart);
+            if (literal) {
+              specifiers.push({
+                specifier: literal.value,
+                line: lineNumberAt(sourceText, literalStart),
+              });
+            }
+          }
+        }
+      }
+      i = j;
+      continue;
+    }
+    i += 1;
+  }
+  return specifiers;
+}
 
 // ---------------------------------------------------------------------------
 
@@ -100,48 +306,31 @@ function describeSource(member) {
 function sourceEdgeKey(member) {
   if (member.isNew) return member.name;
   if (member.role !== null) return `role:${member.role}`;
-  return null; // retired/legacy objects carry no target role — out of scope here
+  return null; // retired objects — forbidden from new edges
 }
 
-function* walkSourceFiles(dir) {
-  let entries;
-  try {
-    entries = readdirSync(dir);
-  } catch {
-    return;
-  }
-  for (const entry of entries.sort()) {
-    if (SKIP_DIRS.has(entry)) continue;
-    const full = join(dir, entry);
-    const stats = statSync(full);
-    if (stats.isDirectory()) {
-      yield* walkSourceFiles(full);
-    } else if (SOURCE_EXTENSIONS.some((ext) => entry.endsWith(ext)) && !entry.endsWith(".d.ts")) {
-      yield full;
+function walkSourceFiles(dir) {
+  const files = [];
+  const walk = (current) => {
+    let entries;
+    try {
+      entries = readdirSync(current);
+    } catch {
+      return;
     }
-  }
-}
-
-const IMPORT_PATTERNS = [
-  /(?:^|\n)\s*(?:import|export)\s[^;]*?from\s*["']([^"']+)["']/,
-  /(?:^|\n)\s*import\s+["']([^"']+)["']/,
-  /\bimport\s*\(\s*["']([^"']+)["']\s*\)/,
-  /\brequire\s*\(\s*["']([^"']+)["']\s*\)/,
-];
-
-function extractImportSpecifiers(sourceText) {
-  const specifiers = [];
-  const lines = sourceText.split("\n");
-  for (let index = 0; index < lines.length; index += 1) {
-    for (const pattern of IMPORT_PATTERNS) {
-      const match = lines[index].match(pattern);
-      if (match?.[1]) {
-        specifiers.push({ specifier: match[1], line: index + 1 });
-        break;
+    for (const entry of entries.sort()) {
+      if (SKIP_DIRS.has(entry)) continue;
+      const full = join(current, entry);
+      const stats = statSync(full);
+      if (stats.isDirectory()) {
+        walk(full);
+      } else if (SOURCE_EXTENSIONS.some((ext) => entry.endsWith(ext)) && !entry.endsWith(".d.ts")) {
+        files.push(full);
       }
     }
-  }
-  return specifiers;
+  };
+  walk(dir);
+  return files;
 }
 
 function memberContainingPath(members, absolutePath) {
@@ -151,6 +340,36 @@ function memberContainingPath(members, absolutePath) {
   });
 }
 
+/**
+ * Splits a bare specifier into its workspace package name and the subpath.
+ * "@stillflow/client/sub" -> { base: "@stillflow/client", subpath: "sub" };
+ * "@repo/core/src/clean/x" -> { base: "@repo/core", subpath: "src/clean/x" }.
+ */
+function splitBareSpecifier(specifier) {
+  if (specifier.startsWith("@")) {
+    const parts = specifier.split("/");
+    if (parts.length < 2) return { base: specifier, subpath: null };
+    return {
+      base: `${parts[0]}/${parts[1]}`,
+      subpath: parts.length > 2 ? parts.slice(2).join("/") : null,
+    };
+  }
+  const slash = specifier.indexOf("/");
+  if (slash === -1) return { base: specifier, subpath: null };
+  return { base: specifier.slice(0, slash), subpath: specifier.slice(slash + 1) };
+}
+
+/** True when a core subpath lands inside the cleaning-engine subtree. */
+function subpathHitsCleanEngine(subpath) {
+  if (subpath === null) return false;
+  return (
+    subpath === "clean" ||
+    subpath.startsWith("clean/") ||
+    subpath === "src/clean" ||
+    subpath.startsWith("src/clean/")
+  );
+}
+
 function recordViolation(violations, rule, location, detail) {
   violations.push({ rule, location, detail });
 }
@@ -158,7 +377,9 @@ function recordViolation(violations, rule, location, detail) {
 /**
  * Evaluates one cross-member edge (manifest or import) against the rules.
  * `via` describes the evidence channel; `testScoped` marks test/storybook
- * sources; `manifestGroup` is set for package.json edges.
+ * sources; `manifestGroup` is set for package.json edges. `specifier` /
+ * `subpath` carry the import form and its workspace-relative part;
+ * `resolvedInsideClean` marks relative imports into the clean subtree.
  */
 function evaluateEdge({
   violations,
@@ -168,7 +389,12 @@ function evaluateEdge({
   via,
   testScoped = false,
   manifestGroup = null,
+  specifier = null,
+  subpath = null,
+  resolvedInsideClean = false,
 }) {
+  const viaLabel = via ?? (specifier === null ? "manifest" : `import ${specifier}`);
+
   // Applications must never be depended upon (拓扑 §2 禁止第一项).
   if (targetMember.isApp && !sourceMember.isApp) {
     recordViolation(
@@ -180,7 +406,44 @@ function evaluateEdge({
     return;
   }
 
+  // Canonical-recalculation guard (FE0-C1 §4): the TypeScript cleaning engine
+  // subtree is banned everywhere outside packages/core itself, tests included.
+  // Relative and bare-subpath forms both resolve here.
+  if (targetMember.isCore && resolvedInsideClean && sourceMember !== targetMember) {
+    recordViolation(
+      violations,
+      "no-clean-engine-imports",
+      location,
+      `import into the @repo/core cleaning-engine subtree (${specifier}); the TS cleaning simulator is a recorded anti-pattern (FE0-C1 §2.2) and may only be imported within packages/core`,
+    );
+    return;
+  }
+
+  // New @stillflow/* packages must never form NEW dependencies onto legacy
+  // members (拓扑 §2: 一切对新 @stillflow/* 之外旧包的新增依赖禁止).
+  if (sourceMember.isNew && !targetMember.isNew) {
+    recordViolation(
+      violations,
+      "boundary/disallowed-new-edge",
+      location,
+      `edge ${describeSource(sourceMember)} -> ${targetMember.name} (${viaLabel}): new @stillflow/* packages must not depend on legacy members (FE0-C2 §2)`,
+    );
+    return;
+  }
+
   if (!targetMember.isNew) return; // legacy-to-legacy stock is consumed by FE5 slices
+
+  // Retired apps (api/email/web/edge) are replace/delete objects — they must
+  // not join the new topology by importing @stillflow/*.
+  if (sourceMember.isApp && sourceMember.role === null) {
+    recordViolation(
+      violations,
+      "boundary/disallowed-new-edge",
+      location,
+      `edge ${describeSource(sourceMember)} -> ${targetMember.name} (${viaLabel}): retired apps are out of the target topology (FE0-C2 §4)`,
+    );
+    return;
+  }
 
   // dev-fixtures has dedicated semantics beyond the plain edge set:
   //   - contracts / client / studio-ui may NEVER reach it (§2 禁止第二项, tests included);
@@ -193,7 +456,7 @@ function evaluateEdge({
         violations,
         "boundary/disallowed-new-edge",
         location,
-        `edge ${describeSource(sourceMember)} -> ${targetMember.name} (${via}): contracts/client/studio-ui are hard-banned from dev-fixtures`,
+        `edge ${describeSource(sourceMember)} -> ${targetMember.name} (${viaLabel}): contracts/client/studio-ui are hard-banned from dev-fixtures`,
       );
       return;
     }
@@ -204,7 +467,7 @@ function evaluateEdge({
           violations,
           "boundary/dev-fixtures-in-production",
           location,
-          `${describeSource(sourceMember)} reaches @stillflow/dev-fixtures (${via}) outside test scopes/devDependencies`,
+          `${describeSource(sourceMember)} reaches @stillflow/dev-fixtures (${viaLabel}) outside test scopes/devDependencies`,
         );
       }
       return;
@@ -213,13 +476,13 @@ function evaluateEdge({
   }
 
   const sourceKey = sourceEdgeKey(sourceMember);
-  if (sourceKey === null) return; // retired apps/packages touching new ones are FE5 stock
+  if (sourceKey === null) return;
   if (!ALLOWED_NEW_EDGES.has(`${sourceKey}>${targetMember.name}`)) {
     recordViolation(
       violations,
       "boundary/disallowed-new-edge",
       location,
-      `edge ${describeSource(sourceMember)} -> ${targetMember.name} (${via}) is not in the FE0-C2 §2 allowed edge set`,
+      `edge ${describeSource(sourceMember)} -> ${targetMember.name} (${viaLabel}) is not in the FE0-C2 §2 allowed edge set`,
     );
   }
 }
@@ -253,49 +516,43 @@ function checkSourceEdges(members, violations) {
       const text = readFileSync(file, "utf8");
       for (const { specifier, line } of extractImportSpecifiers(text)) {
         const testScoped = isTestScopedFile(fileRel);
-        // Bare workspace-name import (@stillflow/*, @repo/*).
-        const bareTarget = members.find((candidate) => candidate.name === specifier);
-        if (bareTarget && bareTarget !== member) {
+        const location = `${fileRel}:${line}`;
+
+        if (specifier.startsWith(".")) {
+          // Relative import reaching into another member's tree.
+          const absoluteTarget = resolve(dirname(file), specifier);
+          const owner = memberContainingPath(members, absoluteTarget);
+          if (!owner || owner === member) continue;
+          const resolvedInsideClean =
+            owner.isCore &&
+            !relative(join(owner.dir, "src", "clean"), absoluteTarget).startsWith("..");
           evaluateEdge({
             violations,
             sourceMember: member,
-            targetMember: bareTarget,
-            location: `${fileRel}:${line}`,
-            via: "bare specifier",
+            targetMember: owner,
+            location,
+            via: `deep relative import into ${owner.relDir}`,
             testScoped,
+            specifier,
+            resolvedInsideClean,
           });
           continue;
         }
 
-        // Relative import reaching into another member's tree.
-        if (!specifier.startsWith(".")) continue;
-        const absoluteTarget = resolve(dirname(file), specifier);
-        const owner = memberContainingPath(members, absoluteTarget);
-        if (!owner || owner === member) continue;
-
-        // Canonical-recalculation guard (FE0-C1 §4): the TypeScript cleaning
-        // engine subtree is banned everywhere outside packages/core itself,
-        // tests included.
-        if (owner.isCore) {
-          const relInsideClean = relative(join(owner.dir, "src", "clean"), absoluteTarget);
-          if (!relInsideClean.startsWith("..")) {
-            recordViolation(
-              violations,
-              "no-clean-engine-imports",
-              `${fileRel}:${line}`,
-              `import into the @repo/core cleaning-engine subtree (${specifier}); the TS cleaning simulator is a recorded anti-pattern (FE0-C1 §2.2) and may only be imported within packages/core`,
-            );
-            continue;
-          }
-        }
-
+        // Bare workspace import: base package name + optional subpath.
+        const { base, subpath } = splitBareSpecifier(specifier);
+        const bareTarget = members.find((candidate) => candidate.name === base);
+        if (!bareTarget || bareTarget === member) continue;
         evaluateEdge({
           violations,
           sourceMember: member,
-          targetMember: owner,
-          location: `${fileRel}:${line}`,
-          via: `deep relative import into ${owner.relDir}`,
+          targetMember: bareTarget,
+          location,
+          via: subpath ? `bare subpath import ${specifier}` : "bare specifier",
           testScoped,
+          specifier,
+          subpath,
+          resolvedInsideClean: subpathHitsCleanEngine(subpath),
         });
       }
     }
