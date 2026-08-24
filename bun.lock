@@ -202,6 +202,25 @@
         "vitest": "^4.0.18",
       },
     },
+    "packages/client": {
+      "name": "@stillflow/client",
+      "version": "0.1.0",
+      "dependencies": {
+        "@stillflow/contracts": "workspace:*",
+      },
+      "devDependencies": {
+        "tsup": "^8.5.1",
+        "typescript": "^5.9.3",
+      },
+    },
+    "packages/contracts": {
+      "name": "@stillflow/contracts",
+      "version": "0.1.0",
+      "devDependencies": {
+        "tsup": "^8.5.1",
+        "typescript": "^5.9.3",
+      },
+    },
     "packages/core": {
       "name": "@repo/core",
       "version": "0.1.0",
@@ -248,6 +267,18 @@
         "typescript": "^5.9.3",
       },
     },
+    "packages/dev-fixtures": {
+      "name": "@stillflow/dev-fixtures",
+      "version": "0.1.0",
+      "dependencies": {
+        "@stillflow/contracts": "workspace:*",
+      },
+      "devDependencies": {
+        "tsup": "^8.5.1",
+        "typescript": "^5.9.3",
+        "vitest": "^4.0.18",
+      },
+    },
     "packages/onboarding": {
       "name": "@repo/onboarding",
       "version": "0.1.0",
@@ -255,6 +286,25 @@
         "@types/node": "^22.13.0",
         "tsup": "^8.5.1",
         "typescript": "^5.9.3",
+      },
+    },
+    "packages/studio-ui": {
+      "name": "@stillflow/studio-ui",
+      "version": "0.1.0",
+      "dependencies": {
+        "@stillflow/contracts": "workspace:*",
+      },
+      "devDependencies": {
+        "@types/react": "^19.1.0",
+        "@types/react-dom": "^19.1.0",
+        "react": "^19.2.4",
+        "react-dom": "^19.2.4",
+        "tsup": "^8.5.1",
+        "typescript": "^5.9.3",
+      },
+      "peerDependencies": {
+        "react": "^19.0.0",
+        "react-dom": "^19.0.0",
       },
     },
     "packages/ui": {
@@ -958,6 +1008,14 @@
     "@standard-schema/spec": ["@standard-schema/spec@1.1.0", "https://registry.npmmirror.com/@standard-schema/spec/-/spec-1.1.0.tgz", {}, "sha512-l2aFy5jALhniG5HgqrD6jXLi/rUWrKvqN/qJx6yoJsgKhblVd+iqqU4RCXavm/jPityDo5TCvKMnpjKnOriy0w=="],
 
     "@standard-schema/utils": ["@standard-schema/utils@0.3.0", "https://registry.npmmirror.com/@standard-schema/utils/-/utils-0.3.0.tgz", {}, "sha512-e7Mew686owMaPJVNNLs55PUvgz371nKgwsc4vxE49zsODpJEnxgxRo2y/OKrqueavXgZNMDVj3DdHFlaSAeU8g=="],
+
+    "@stillflow/client": ["@stillflow/client@workspace:packages/client"],
+
+    "@stillflow/contracts": ["@stillflow/contracts@workspace:packages/contracts"],
+
+    "@stillflow/dev-fixtures": ["@stillflow/dev-fixtures@workspace:packages/dev-fixtures"],
+
+    "@stillflow/studio-ui": ["@stillflow/studio-ui@workspace:packages/studio-ui"],
 
     "@swc/helpers": ["@swc/helpers@0.5.15", "https://registry.npmmirror.com/@swc/helpers/-/helpers-0.5.15.tgz", { "dependencies": { "tslib": "^2.8.0" } }, "sha512-JQ5TuMi45Owi4/BIMAJBoSQoOJu12oOk/gADqlcUL9JEdHB8vyjUSsxqeNXnmXHjYKMi2WcYtezGEEhqUI/E2g=="],
 

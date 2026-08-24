@@ -1,0 +1,30 @@
+{
+  "name": "@stillflow/client",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./src/index.ts"
+    }
+  },
+  "//authority": [
+    "Target topology contract (FE0-C2 §1): transport, auth, error normalization, cancel/retry.",
+    "Consumes @stillflow/contracts only. No UI, no network-adjacent local execution.",
+    "Implementation lands in FE1-S4 (openship#22)."
+  ],
+  "scripts": {
+    "build": "tsup src/index.ts --format esm --dts --clean",
+    "lint": "tsc --noEmit",
+    "clean": "rm -rf dist .turbo node_modules"
+  },
+  "dependencies": {
+    "@stillflow/contracts": "workspace:*"
+  },
+  "devDependencies": {
+    "tsup": "^8.5.1",
+    "typescript": "^5.9.3"
+  }
+}
