@@ -3,3 +3,4 @@
 // (openship#20).
 export const PACKAGE_NAME = "@stillflow/studio-ui" as const;
 
+import "@stillflow/client";
