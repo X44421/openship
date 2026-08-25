@@ -34,7 +34,37 @@ const MESSAGES = {
   appFixtures: "apps must reach @stillflow/dev-fixtures from test scopes/devDependencies only (FE0-C2 §2)",
   retiredApps:
     "retired apps (api/email/web/edge) are replace/delete objects and must not join the target topology (FE0-C2 §4)",
+  appContracts:
+    "apps must not import @stillflow/contracts directly; DTO access flows through @stillflow/client (FE0-C2 §2)",
+  appStudioUi:
+    "only web-client (apps/dashboard) consumes @stillflow/studio-ui; desktop/cli go through @stillflow/client (FE0-C2 §2)",
 };
+
+// --- Frozen edge-set derivation (FE0-C2 §2/§5) ------------------------------
+// R2 audit fix: scopes below are derived mechanically from the explicit FE0-C2
+// §5 target edge set, and EVERY banned internal package is expressed as a
+// root + subpath pattern pair (`@x`, `@x/*` — the bare entry pins the package
+// root, the `/*` entry cascades into nested subpaths), so subpath forms like
+// `@stillflow/studio-ui/internal` cannot slip through. desktop/cli get their
+// own narrow scope instead of sharing dashboard's broad one.
+const INTERNAL_PACKAGES = [
+  "@stillflow/contracts",
+  "@stillflow/client",
+  "@stillflow/studio-ui",
+  "@stillflow/dev-fixtures",
+];
+
+// Explicit allowlist, verbatim from the FE0-C2 §5 target edge set:
+//   web-client / desktop / cli → client → contracts;
+//   web-client → studio-ui → contracts; dev-fixtures → contracts.
+const ROLE_ALLOWED = {
+  webClient: ["@stillflow/client", "@stillflow/studio-ui"],
+  desktop: ["@stillflow/client"],
+  cli: ["@stillflow/client"],
+};
+
+/** Root + subpath pattern pair for one banned workspace package. */
+const restricted = (name, message) => ({ group: [name, `${name}/*`], message });
 
 export default [
   {
@@ -82,15 +112,17 @@ export default [
       ],
     },
   },
+  // New packages reach only @stillflow/contracts (§2 允许); sibling new
+  // packages are banned root+subpath; legacy members via @repo/* are banned.
   {
     files: ["packages/client/**/*.{ts,tsx}"],
     rules: {
       "no-restricted-imports": [
         "error",
         {
-          paths: [{ name: "@stillflow/studio-ui", message: MESSAGES.clientStudioUi }],
           patterns: [
-            { group: ["@stillflow/dev-fixtures", "@stillflow/dev-fixtures/*"], message: MESSAGES.newPackageFixtures },
+            restricted("@stillflow/studio-ui", MESSAGES.clientStudioUi),
+            restricted("@stillflow/dev-fixtures", MESSAGES.newPackageFixtures),
             { group: ["@repo/*"], message: MESSAGES.newPackageLegacy },
           ],
         },
@@ -103,9 +135,9 @@ export default [
       "no-restricted-imports": [
         "error",
         {
-          paths: [{ name: "@stillflow/client", message: MESSAGES.studioUiClient }],
           patterns: [
-            { group: ["@stillflow/dev-fixtures", "@stillflow/dev-fixtures/*"], message: MESSAGES.newPackageFixtures },
+            restricted("@stillflow/client", MESSAGES.studioUiClient),
+            restricted("@stillflow/dev-fixtures", MESSAGES.newPackageFixtures),
             { group: ["@repo/*"], message: MESSAGES.newPackageLegacy },
           ],
         },
@@ -118,22 +150,71 @@ export default [
       "no-restricted-imports": [
         "error",
         {
-          paths: [{ name: "@stillflow/client", message: MESSAGES.clientStudioUi }],
           patterns: [
-            { group: ["@stillflow/studio-ui", "@stillflow/studio-ui/*", "@repo/*"], message: MESSAGES.newPackageLegacy },
+            restricted("@stillflow/client", MESSAGES.clientStudioUi),
+            restricted("@stillflow/studio-ui", MESSAGES.studioUiClient),
+            { group: ["@repo/*"], message: MESSAGES.newPackageLegacy },
           ],
         },
       ],
     },
   },
-  // Target-role apps consume per the §2 allowlist; fixtures are test-scope only.
+  // Target-role apps consume per the §2 allowlist: every non-allowed internal
+  // package is banned root+subpath. dev-fixtures additionally carries its own
+  // production-scope semantics (test/storybook scopes exempted in the next
+  // block). Legacy @repo/* stock stays out of scope here — consumed by FE5
+  // retirement slices, with the clean-engine subtree covered by the local
+  // boundary/no-clean-engine-imports rule above.
   {
-    files: ["apps/{dashboard,desktop,cli}/**/*.{ts,tsx}"],
+    files: ["apps/dashboard/**/*.{ts,tsx}"],
     rules: {
       "no-restricted-imports": [
         "error",
         {
-          paths: [{ name: "@stillflow/dev-fixtures", message: MESSAGES.appFixtures }],
+          patterns: INTERNAL_PACKAGES.filter(
+            (name) => !ROLE_ALLOWED.webClient.includes(name),
+          ).map((name) =>
+            name === "@stillflow/dev-fixtures"
+              ? restricted(name, MESSAGES.appFixtures)
+              : restricted(name, MESSAGES.appContracts),
+          ),
+        },
+      ],
+    },
+  },
+  {
+    files: ["apps/desktop/**/*.{ts,tsx}"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: INTERNAL_PACKAGES.filter(
+            (name) => !ROLE_ALLOWED.desktop.includes(name),
+          ).map((name) =>
+            name === "@stillflow/dev-fixtures"
+              ? restricted(name, MESSAGES.appFixtures)
+              : name === "@stillflow/studio-ui"
+                ? restricted(name, MESSAGES.appStudioUi)
+                : restricted(name, MESSAGES.appContracts),
+          ),
+        },
+      ],
+    },
+  },
+  {
+    files: ["apps/cli/**/*.{ts,tsx}"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: INTERNAL_PACKAGES.filter((name) => !ROLE_ALLOWED.cli.includes(name)).map(
+            (name) =>
+              name === "@stillflow/dev-fixtures"
+                ? restricted(name, MESSAGES.appFixtures)
+                : name === "@stillflow/studio-ui"
+                  ? restricted(name, MESSAGES.appStudioUi)
+                  : restricted(name, MESSAGES.appContracts),
+          ),
         },
       ],
     },
