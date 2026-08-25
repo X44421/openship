@@ -123,6 +123,49 @@ function readQuoted(text, index) {
   return null;
 }
 
+/** Cooks the minimal set of escape sequences a specifier may legally carry. */
+function cookEscape(raw) {
+  switch (raw) {
+    case "n": return "\n";
+    case "t": return "\t";
+    case "r": return "\r";
+    case "b": return "\b";
+    case "f": return "\f";
+    case "v": return "\v";
+    case "0": return "\0";
+    default: return raw; // \\ \' \" \` and identity escapes
+  }
+}
+
+/**
+ * Reads a no-interpolation template literal at `index` and returns its cooked
+ * value; null when `index` is not a backtick or the literal contains `${…}`.
+ * R2 audit fix: `` import(`@repo/core/src/clean/execute`) `` is legal, statically
+ * decidable TypeScript and previously slipped past this scanner because the
+ * main loop skipped template literals wholesale. Interpolated templates remain
+ * out of scope here (not statically decidable); the AST-exact ESLint layer
+ * applies the same no-interpolation normalization on top.
+ */
+function readStaticTemplate(text, index) {
+  if (text[index] !== "`") return null;
+  const n = text.length;
+  let i = index + 1;
+  let value = "";
+  while (i < n) {
+    const character = text[i];
+    if (character === "\\") {
+      value += cookEscape(text[i + 1] ?? "");
+      i += 2;
+      continue;
+    }
+    if (character === "$" && text[i + 1] === "{") return null;
+    if (character === "`") return { value, offset: i - index + 1 };
+    value += character;
+    i += 1;
+  }
+  return null;
+}
+
 /**
  * Searches from `start` for the `from` keyword of an import/export statement.
  * Returns -1 when a statement boundary (`;`) or a plainly non-import keyword
@@ -181,11 +224,11 @@ function lineNumberAt(text, index) {
  * Extracts import specifiers with their 1-based line numbers. Covers:
  *   - `import X from "…"`, `import { … } from "…"`, `import type { … } from "…"`
  *   - `import "…"` side effects, `export * from "…"`, `export { … } from "…"`
- *   - dynamic `import("…")` and `require("…")`
+ *   - dynamic `import("…")`/`` import(`…`) `` and `require("…")`/`` require(`…) ``
  * Multi-line statements are handled because scanning is lexical, not line-based.
- * Known limitation (documented): template-literal interpolation containing a
- * dynamic import is skipped with the template; AST-exact coverage is provided
- * by the ESLint boundary rules layered on top.
+ * Known limitation (documented): template literals WITH `${…}` interpolation are
+ * not statically decidable and stay unreported here; the AST-exact ESLint layer
+ * normalizes no-interpolation templates the same way and covers every other form.
  */
 function extractImportSpecifiers(sourceText) {
   const specifiers = [];
@@ -224,9 +267,9 @@ function extractImportSpecifiers(sourceText) {
         const nextCharacter = sourceText[next];
 
         if (nextCharacter === "(" && word !== "export") {
-          // dynamic import("…") / require("…")
+          // dynamic import("…" / `…`) / require("…" / `…`)
           const literalStart = skipWhitespaceAndComments(sourceText, next + 1);
-          const literal = readQuoted(sourceText, literalStart);
+          const literal = readQuoted(sourceText, literalStart) ?? readStaticTemplate(sourceText, literalStart);
           if (literal) {
             specifiers.push({
               specifier: literal.value,
