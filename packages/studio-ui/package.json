@@ -1,0 +1,38 @@
+{
+  "name": "@stillflow/studio-ui",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "src/index.tsx",
+  "types": "src/index.tsx",
+  "exports": {
+    ".": {
+      "types": "./src/index.tsx",
+      "import": "./src/index.tsx"
+    }
+  },
+  "//authority": [
+    "Target topology contract (FE0-C2 §1): UI components with no business authority logic.",
+    "Consumes contracts types; no network calls; no dependency on @stillflow/client.",
+    "Design system implementation lands in FE1-S2 (openship#20)."
+  ],
+  "scripts": {
+    "build": "tsup src/index.tsx --format esm --dts --clean --external react --external react-dom",
+    "lint": "tsc --noEmit",
+    "clean": "rm -rf dist .turbo node_modules"
+  },
+  "dependencies": {
+    "@stillflow/contracts": "workspace:*"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.1.0",
+    "@types/react-dom": "^19.1.0",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "tsup": "^8.5.1",
+    "typescript": "^5.9.3"
+  }
+}

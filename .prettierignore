@@ -1,0 +1,7 @@
+# Generated output is byte-pinned by packages/contracts/scripts/verify.mjs;
+# prettier must never reformat it (FE1-S1 #19).
+packages/contracts/src/generated/
+
+# Third-party / build artifacts
+bun.lock
+pnpm-lock.yaml

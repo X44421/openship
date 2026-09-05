@@ -21,6 +21,42 @@ concurrency:
 # unmergeable forever with no visible reason.
 
 jobs:
+  # FE1-S1 (#19): frozen topology guard (docs/issues/issue-013-package-topology-contract.md §2)
+  # plus the no-clean-engine-imports canonical-recalculation ban
+  # (docs/issues/issue-011-client-authority-boundary-contract.md §4).
+  # Two layers, both fail closed:
+  #   1. check-dependency-boundaries.mjs — zero-dep lexical scan, runs before install
+  #   2. eslint boundary rules (no-restricted-imports edge set + local
+  #      boundary/no-clean-engine-imports rule; --no-inline-config) — AST-exact
+  boundaries:
+    name: Dependency boundaries
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Check workspace dependency boundaries (pre-install)
+        run: node scripts/check-dependency-boundaries.mjs
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Cache bun install
+        uses: actions/cache@v6
+        with:
+          path: ~/.bun/install/cache
+          key: ${{ runner.os }}-bun-${{ hashFiles('**/bun.lock', '**/bun.lockb') }}
+          restore-keys: |
+            ${{ runner.os }}-bun-
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Lint boundary rules (AST-exact)
+        run: bun run lint:boundaries
+
   typecheck:
     name: Typecheck
     runs-on: ubuntu-latest
