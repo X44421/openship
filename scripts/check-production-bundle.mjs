@@ -42,8 +42,8 @@ function scan(dir, out) {
   }
   for (const entry of entries) {
     const path = join(dir, entry.name);
+    if (SKIP_SEGMENTS.has(entry.name)) continue; // dirs AND the trace file (see above)
     if (entry.isDirectory()) {
-      if (SKIP_SEGMENTS.has(entry.name)) continue;
       scan(path, out);
       continue;
     }
