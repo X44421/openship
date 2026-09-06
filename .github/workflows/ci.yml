@@ -126,6 +126,168 @@ jobs:
       - name: Run tests
         run: bun run test
 
+  # FE1-S6 (#24): the frozen generated contract must match its snapshot. Any
+  # hand-edit of packages/contracts/src/generated/wire.ts or a stale snapshot
+  # fails here — regenerate via `bun run --cwd packages/contracts generate`.
+  # Runbook: docs/ci/quality-gates.md §Contracts drift.
+  contracts-drift:
+    name: Contracts drift
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Cache bun install
+        uses: actions/cache@v6
+        with:
+          path: ~/.bun/install/cache
+          key: ${{ runner.os }}-bun-${{ hashFiles('**/bun.lock', '**/bun.lockb') }}
+          restore-keys: |
+            ${{ runner.os }}-bun-
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Verify generated contracts against their snapshot
+        run: bun run --cwd packages/contracts verify
+
+  # FE1-S6 (#24): high-confidence secret detection over every git-tracked file.
+  # Pre-install by design — the gate must run even when the dependency install
+  # is broken. Allowances require an inline `secret-scan:allow(<reason>)`
+  # marker; unexplained secrets-shaped literals fail the build.
+  # Runbook: docs/ci/quality-gates.md §Secret scan.
+  secrets:
+    name: Secret scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Scan tracked files for credential shapes
+        run: node scripts/check-secrets.mjs
+
+  # FE1-S6 (#24): known-vulnerability audit (OSV) and license allowlist over
+  # every installed package, including the per-workspace trees that bun does
+  # not hoist. Vulnerabilities are remediated by a lockfile bump, or ignored
+  # with a reviewed entry in scripts/check-dependency-vulnerabilities.mjs.
+  # Runbook: docs/ci/quality-gates.md §Dependency audit / §License scan.
+  dependencies:
+    name: Dependency audit & licenses
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Cache bun install
+        uses: actions/cache@v6
+        with:
+          path: ~/.bun/install/cache
+          key: ${{ runner.os }}-bun-${{ hashFiles('**/bun.lock', '**/bun.lockb') }}
+          restore-keys: |
+            ${{ runner.os }}-bun-
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Audit installed packages against OSV
+        run: node scripts/check-dependency-vulnerabilities.mjs
+
+      - name: Enforce the license allowlist
+        run: node scripts/check-licenses.mjs
+
+  # FE1-S6 (#24): the production-critical bundles must stay inside their frozen
+  # byte budgets (scripts/analyze-bundles.mjs). Raising a budget is a
+  # PR-visible change that has to name the feature that grew the output.
+  # Runbook: docs/ci/quality-gates.md §Bundle analysis.
+  bundle-analysis:
+    name: Bundle analysis
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Cache bun install
+        uses: actions/cache@v6
+        with:
+          path: ~/.bun/install/cache
+          key: ${{ runner.os }}-bun-${{ hashFiles('**/bun.lock', '**/bun.lockb') }}
+          restore-keys: |
+            ${{ runner.os }}-bun-
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Build api, dashboard and client
+        run: |
+          bun run build
+          bun run --cwd packages/client build
+
+      - name: Enforce bundle budgets
+        run: |
+          node scripts/analyze-bundles.mjs apps/api/dist apps/dashboard/.next packages/client/dist
+
+  # FE1-S6 (#24): every shipped surface must build in CI — web (Next),
+  # desktop (Electron packaging smoke; signing/notarization is FE4-D1) and
+  # cli. Buildable legs additionally re-run their bundle budget.
+  # Runbook: docs/ci/quality-gates.md §Build matrix.
+  build:
+    name: Build (${{ matrix.target }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [web, desktop, cli]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Cache bun install
+        uses: actions/cache@v6
+        with:
+          path: ~/.bun/install/cache
+          key: ${{ runner.os }}-bun-${{ hashFiles('**/bun.lock', '**/bun.lockb') }}
+          restore-keys: |
+            ${{ runner.os }}-bun-
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Build web (Next.js production bundle)
+        if: ${{ matrix.target == 'web' }}
+        run: |
+          bun run --cwd apps/web build
+          node scripts/analyze-bundles.mjs apps/web/.next
+
+      - name: Package desktop (Electron packaging smoke)
+        if: ${{ matrix.target == 'desktop' }}
+        run: bun run --cwd apps/desktop package
+
+      - name: Build cli
+        if: ${{ matrix.target == 'cli' }}
+        run: |
+          bun run --cwd apps/cli build
+          node scripts/analyze-bundles.mjs apps/cli/dist
+
   # Rollback and restore against a REAL Docker daemon. This is the only job that
   # proves those paths work at all; every other test in the repo mocks the runtime.
   #

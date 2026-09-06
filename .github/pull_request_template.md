@@ -47,3 +47,7 @@ Paste real output rather than describing what should happen.
 - [ ] A test fails without this change and passes with it (or I explained above why there isn't one)
 - [ ] `bun run test`, `bun run --cwd <workspace> lint`, and `bun format` all pass locally
 - [ ] I understand every line of this diff and can explain it in review
+- [ ] I know the required CI checks for this PR and why each would fail —
+      see [docs/ci/quality-gates.md](docs/ci/quality-gates.md) for the per-gate runbook
+      (Dependency boundaries, Typecheck, Test, Contracts drift, Secret scan,
+      Dependency audit & licenses, Bundle analysis, Build web/desktop/cli)
