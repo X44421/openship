@@ -1,8 +1,8 @@
 # FE1-S4 — API 客户端合同落实记录（contract note）
 
-> Status: Implemented (Draft PR) · Part of [openship#22](https://github.com/X44421/openship/issues/22)
+> Status: Implemented · Part of [openship#22](https://github.com/X44421/openship/issues/22)
 > 上位合同：[FE0-C1 客户端权威边界合同](issue-011-client-authority-boundary-contract.md)（§3 协议、§5 等价接口表）
-> 跨仓对齐：stillflow SVC-A1 冻结合同 §3.2/§3.3/§6.1（[X44421/stillflow](https://github.com/X44421/stillflow) `docs/issues/issue-303-svc-a1-http-service-entry-contract.md`，PR-1 #306 merge `e36f099`，收口 PR #310 head `51dee80`）
+> 跨仓对齐：stillflow SVC-A1 冻结合同 §3.2/§3.3/§6.1（[X44421/stillflow](https://github.com/X44421/stillflow) `docs/issues/issue-303-svc-a1-http-service-entry-contract.md`，PR-1 #306 merge `e36f099`，收口 PR #310——PR 正文完成报告记录时点 head `51dee80`，实际合入 head `de9de99`（仅一行测试代码差异，编码器字节等价），merge `2c801dfd`）
 
 ## 1. 等价接口表逐行落实（FE0-C1 §5）
 
