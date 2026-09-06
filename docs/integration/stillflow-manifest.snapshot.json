@@ -1,0 +1,644 @@
+{
+  "$comment": "Machine snapshot of the authoritative StillFlow route manifest. Source of truth: backend/crates/stillflow-api/src/manifest.rs. Regenerate via scripts/check-capability-matrix.mjs --extract when stillflow main moves; do not hand-edit.",
+  "source": {
+    "repo": "X44421/stillflow",
+    "ref": "main",
+    "commit": "c29d8c40ac7ab19d414fc71aee14c49b8c6cd3b9",
+    "file": "backend/crates/stillflow-api/src/manifest.rs",
+    "manifestRsSha256": "fc51b58c7ab95ce9b8a269a6521ff748ad2a30cb5304788c37188885895aa957",
+    "extractedAt": "2026-09-06T13:05:00Z",
+    "routeCount": 90
+  },
+  "routes": [
+    {
+      "operationId": "handshake",
+      "method": "POST",
+      "path": "/v1/handshake",
+      "requestSchema": "HandshakeRequest",
+      "responseSchema": "HandshakeResponse"
+    },
+    {
+      "operationId": "health.liveness",
+      "method": "GET",
+      "path": "/v1/health/live",
+      "requestSchema": "EmptyRequest",
+      "responseSchema": "HealthView"
+    },
+    {
+      "operationId": "health.readiness",
+      "method": "GET",
+      "path": "/v1/health/ready",
+      "requestSchema": "EmptyRequest",
+      "responseSchema": "HealthView"
+    },
+    {
+      "operationId": "health.read",
+      "method": "GET",
+      "path": "/v1/health",
+      "requestSchema": "EmptyRequest",
+      "responseSchema": "HealthView"
+    },
+    {
+      "operationId": "metrics.read",
+      "method": "GET",
+      "path": "/v1/metrics",
+      "requestSchema": "ObjectIdRequest",
+      "responseSchema": "MetricsView"
+    },
+    {
+      "operationId": "workspace.create",
+      "method": "POST",
+      "path": "/v1/workspaces",
+      "requestSchema": "CreateWorkspaceRequest",
+      "responseSchema": "WorkspaceView"
+    },
+    {
+      "operationId": "workspace.archive",
+      "method": "POST",
+      "path": "/v1/workspaces/{workspaceId}/archive",
+      "requestSchema": "ArchiveWorkspaceRequest",
+      "responseSchema": "WorkspaceView"
+    },
+    {
+      "operationId": "workspace.read",
+      "method": "GET",
+      "path": "/v1/workspaces/{objectId}",
+      "requestSchema": "ObjectIdRequest",
+      "responseSchema": "WorkspaceView"
+    },
+    {
+      "operationId": "member.create",
+      "method": "POST",
+      "path": "/v1/members",
+      "requestSchema": "CreateMemberRequest",
+      "responseSchema": "MemberView"
+    },
+    {
+      "operationId": "member.read",
+      "method": "GET",
+      "path": "/v1/members/{objectId}",
+      "requestSchema": "ObjectIdRequest",
+      "responseSchema": "MemberView"
+    },
+    {
+      "operationId": "member.revoke",
+      "method": "POST",
+      "path": "/v1/members/{memberId}/revoke",
+      "requestSchema": "RevokeMemberRequest",
+      "responseSchema": "MemberView"
+    },
+    {
+      "operationId": "role.create",
+      "method": "POST",
+      "path": "/v1/roles",
+      "requestSchema": "CreateRoleRequest",
+      "responseSchema": "RoleView"
+    },
+    {
+      "operationId": "role.read",
+      "method": "GET",
+      "path": "/v1/roles/{objectId}",
+      "requestSchema": "ObjectIdRequest",
+      "responseSchema": "RoleView"
+    },
+    {
+      "operationId": "role.capabilities.set",
+      "method": "POST",
+      "path": "/v1/roles/{roleId}/capabilities",
+      "requestSchema": "SetRoleCapabilitiesRequest",
+      "responseSchema": "RoleView"
+    },
+    {
+      "operationId": "member.role.assign",
+      "method": "POST",
+      "path": "/v1/members/{memberId}/roles",
+      "requestSchema": "AssignRoleRequest",
+      "responseSchema": "RoleAssignmentView"
+    },
+    {
+      "operationId": "service-account.create",
+      "method": "POST",
+      "path": "/v1/service-accounts",
+      "requestSchema": "CreateServiceAccountRequest",
+      "responseSchema": "ServiceAccountView"
+    },
+    {
+      "operationId": "service-account.read",
+      "method": "GET",
+      "path": "/v1/service-accounts/{objectId}",
+      "requestSchema": "ObjectIdRequest",
+      "responseSchema": "ServiceAccountView"
+    },
+    {
+      "operationId": "service-account.revoke",
+      "method": "POST",
+      "path": "/v1/service-accounts/{serviceAccountId}/revoke",
+      "requestSchema": "RevokeServiceAccountRequest",
+      "responseSchema": "ServiceAccountView"
+    },
+    {
+      "operationId": "credential.register",
+      "method": "POST",
+      "path": "/v1/credentials",
+      "requestSchema": "RegisterCredentialReferenceRequest",
+      "responseSchema": "CredentialRefView"
+    },
+    {
+      "operationId": "credential.read",
+      "method": "GET",
+      "path": "/v1/credentials/{objectId}",
+      "requestSchema": "ObjectIdRequest",
+      "responseSchema": "CredentialRefView"
+    },
+    {
+      "operationId": "credential.rotate.begin",
+      "method": "POST",
+      "path": "/v1/credentials/{credentialId}/rotation",
+      "requestSchema": "BeginCredentialRotationRequest",
+      "responseSchema": "CredentialRefView"
+    },
+    {
+      "operationId": "credential.rotate.complete",
+      "method": "POST",
+      "path": "/v1/credentials/{credentialId}/rotation/complete",
+      "requestSchema": "CompleteCredentialRotationRequest",
+      "responseSchema": "CredentialRefView"
+    },
+    {
+      "operationId": "credential.revoke",
+      "method": "POST",
+      "path": "/v1/credentials/{credentialId}/revoke",
+      "requestSchema": "RevokeCredentialRequest",
+      "responseSchema": "CredentialRefView"
+    },
+    {
+      "operationId": "credential.recover",
+      "method": "POST",
+      "path": "/v1/credentials/{credentialId}/recover",
+      "requestSchema": "RecoverCredentialRequest",
+      "responseSchema": "CredentialRefView"
+    },
+    {
+      "operationId": "session.create",
+      "method": "POST",
+      "path": "/v1/sessions",
+      "requestSchema": "CreateSessionRequest",
+      "responseSchema": "SessionView"
+    },
+    {
+      "operationId": "session.list",
+      "method": "GET",
+      "path": "/v1/sessions",
+      "requestSchema": "ListRequest",
+      "responseSchema": "ObjectList<SessionView>"
+    },
+    {
+      "operationId": "session.read",
+      "method": "GET",
+      "path": "/v1/sessions/{objectId}",
+      "requestSchema": "ObjectIdRequest",
+      "responseSchema": "SessionView"
+    },
+    {
+      "operationId": "session.close",
+      "method": "POST",
+      "path": "/v1/sessions/{sessionId}/close",
+      "requestSchema": "CloseSessionRequest",
+      "responseSchema": "SessionView"
+    },
+    {
+      "operationId": "connection.test",
+      "method": "POST",
+      "path": "/v1/connections/test",
+      "requestSchema": "TestSourceConnectionRequest",
+      "responseSchema": "ConnectionStatus"
+    },
+    {
+      "operationId": "connection.register",
+      "method": "POST",
+      "path": "/v1/connections",
+      "requestSchema": "RegisterSourceConnectionRequest",
+      "responseSchema": "SourceConnectionView"
+    },
+    {
+      "operationId": "connection.list",
+      "method": "GET",
+      "path": "/v1/connections",
+      "requestSchema": "ListRequest",
+      "responseSchema": "ObjectList<SourceConnectionView>"
+    },
+    {
+      "operationId": "connection.read",
+      "method": "GET",
+      "path": "/v1/connections/{objectId}",
+      "requestSchema": "ObjectIdRequest",
+      "responseSchema": "SourceConnectionView"
+    },
+    {
+      "operationId": "connection.update",
+      "method": "POST",
+      "path": "/v1/connections/{connectionId}",
+      "requestSchema": "UpdateSourceConnectionRequest",
+      "responseSchema": "SourceConnectionView"
+    },
+    {
+      "operationId": "connection.transition",
+      "method": "POST",
+      "path": "/v1/connections/{connectionId}/transition",
+      "requestSchema": "TransitionSourceConnectionRequest",
+      "responseSchema": "SourceConnectionView"
+    },
+    {
+      "operationId": "connection.retire",
+      "method": "POST",
+      "path": "/v1/connections/{connectionId}/retire",
+      "requestSchema": "RetireSourceConnectionRequest",
+      "responseSchema": "SourceConnectionView"
+    },
+    {
+      "operationId": "asset.list",
+      "method": "GET",
+      "path": "/v1/assets",
+      "requestSchema": "ListRequest",
+      "responseSchema": "ObjectList<SourceAssetView>"
+    },
+    {
+      "operationId": "asset.discover",
+      "method": "POST",
+      "path": "/v1/assets/discover",
+      "requestSchema": "DiscoverAssetsRequest",
+      "responseSchema": "Vec<SourceAssetView>"
+    },
+    {
+      "operationId": "asset.inspect",
+      "method": "POST",
+      "path": "/v1/assets/inspect",
+      "requestSchema": "InspectAssetRequest",
+      "responseSchema": "AssetMetadata"
+    },
+    {
+      "operationId": "asset.preview",
+      "method": "POST",
+      "path": "/v1/assets/preview",
+      "requestSchema": "PreviewAssetRequest",
+      "responseSchema": "PreviewView"
+    },
+    {
+      "operationId": "dataset.create",
+      "method": "POST",
+      "path": "/v1/datasets",
+      "requestSchema": "CreateDatasetRequest",
+      "responseSchema": "DatasetView"
+    },
+    {
+      "operationId": "dataset.list",
+      "method": "GET",
+      "path": "/v1/datasets",
+      "requestSchema": "ListRequest",
+      "responseSchema": "ObjectList<DatasetView>"
+    },
+    {
+      "operationId": "dataset.read",
+      "method": "GET",
+      "path": "/v1/datasets/{objectId}",
+      "requestSchema": "ObjectIdRequest",
+      "responseSchema": "DatasetView"
+    },
+    {
+      "operationId": "dataset.archive",
+      "method": "POST",
+      "path": "/v1/datasets/{objectId}/archive",
+      "requestSchema": "ObjectIdRequest",
+      "responseSchema": "DatasetView"
+    },
+    {
+      "operationId": "profile.history.list",
+      "method": "GET",
+      "path": "/v1/datasets/{datasetId}/profile-history",
+      "requestSchema": "ListProfileHistoryRequest",
+      "responseSchema": "ProfileHistoryPageView"
+    },
+    {
+      "operationId": "plan.create",
+      "method": "POST",
+      "path": "/v1/plans",
+      "requestSchema": "CreatePlanRequest",
+      "responseSchema": "PlanView"
+    },
+    {
+      "operationId": "plan.list",
+      "method": "GET",
+      "path": "/v1/plans",
+      "requestSchema": "ListRequest",
+      "responseSchema": "ObjectList<PlanView>"
+    },
+    {
+      "operationId": "plan.load",
+      "method": "GET",
+      "path": "/v1/plans/{objectId}",
+      "requestSchema": "ObjectIdRequest",
+      "responseSchema": "PlanView"
+    },
+    {
+      "operationId": "plan.version.save",
+      "method": "POST",
+      "path": "/v1/plans/{planId}/versions",
+      "requestSchema": "SavePlanVersionRequest",
+      "responseSchema": "PlanVersionView"
+    },
+    {
+      "operationId": "plan.version.list",
+      "method": "GET",
+      "path": "/v1/plans/{planId}/versions",
+      "requestSchema": "ListPlanVersionsRequest",
+      "responseSchema": "ObjectList<PlanVersionView>"
+    },
+    {
+      "operationId": "plan.version.read",
+      "method": "GET",
+      "path": "/v1/plan-versions/{objectId}",
+      "requestSchema": "ObjectIdRequest",
+      "responseSchema": "PlanVersionView"
+    },
+    {
+      "operationId": "plan.version.publish",
+      "method": "POST",
+      "path": "/v1/plan-versions/{planVersionId}/publish",
+      "requestSchema": "PublishPlanVersionRequest",
+      "responseSchema": "PlanVersionView"
+    },
+    {
+      "operationId": "plan.clone",
+      "method": "POST",
+      "path": "/v1/plans/clone",
+      "requestSchema": "ClonePlanRequest",
+      "responseSchema": "PlanVersionView"
+    },
+    {
+      "operationId": "plan.diff",
+      "method": "POST",
+      "path": "/v1/plans/diff",
+      "requestSchema": "PlanDiffRequest",
+      "responseSchema": "PlanDiffView"
+    },
+    {
+      "operationId": "plan.validate",
+      "method": "POST",
+      "path": "/v1/plans/validate",
+      "requestSchema": "ValidatePlanRequest",
+      "responseSchema": "ValidatePlanView"
+    },
+    {
+      "operationId": "engine.preview",
+      "method": "POST",
+      "path": "/v1/engine/preview",
+      "requestSchema": "EnginePreviewRequest",
+      "responseSchema": "EnginePreviewView"
+    },
+    {
+      "operationId": "job.submit",
+      "method": "POST",
+      "path": "/v1/jobs",
+      "requestSchema": "SubmitJobRequest",
+      "responseSchema": "JobView"
+    },
+    {
+      "operationId": "drift.compare",
+      "method": "POST",
+      "path": "/v1/drift/comparisons",
+      "requestSchema": "SubmitDriftComparisonRequest",
+      "responseSchema": "JobView"
+    },
+    {
+      "operationId": "job.read",
+      "method": "GET",
+      "path": "/v1/jobs/{objectId}",
+      "requestSchema": "ObjectIdRequest",
+      "responseSchema": "JobView"
+    },
+    {
+      "operationId": "job.list",
+      "method": "GET",
+      "path": "/v1/jobs",
+      "requestSchema": "ListJobsRequest",
+      "responseSchema": "JobPageView"
+    },
+    {
+      "operationId": "job.cancel",
+      "method": "POST",
+      "path": "/v1/jobs/{jobId}/cancel",
+      "requestSchema": "CancelJobRequest",
+      "responseSchema": "JobView"
+    },
+    {
+      "operationId": "export.submit",
+      "method": "POST",
+      "path": "/v1/exports",
+      "requestSchema": "SubmitExportRequest",
+      "responseSchema": "JobView"
+    },
+    {
+      "operationId": "export.read",
+      "method": "GET",
+      "path": "/v1/exports/{jobId}",
+      "requestSchema": "ObjectIdRequest",
+      "responseSchema": "JobView"
+    },
+    {
+      "operationId": "export.cancel",
+      "method": "POST",
+      "path": "/v1/exports/{jobId}/cancel",
+      "requestSchema": "CancelJobRequest",
+      "responseSchema": "JobView"
+    },
+    {
+      "operationId": "export.manifest.read",
+      "method": "GET",
+      "path": "/v1/exports/{exportId}/manifest",
+      "requestSchema": "ObjectIdRequest",
+      "responseSchema": "ExportManifestView"
+    },
+    {
+      "operationId": "export.files.list",
+      "method": "GET",
+      "path": "/v1/exports/{exportId}/files",
+      "requestSchema": "ListExportFilesRequest",
+      "responseSchema": "ExportFilePageView"
+    },
+    {
+      "operationId": "export.download",
+      "method": "GET",
+      "path": "/v1/exports/{exportId}/download",
+      "requestSchema": "ExportDownloadRequest",
+      "responseSchema": "ExportDownloadPage"
+    },
+    {
+      "operationId": "export.tombstone",
+      "method": "POST",
+      "path": "/v1/exports/{exportId}/tombstone",
+      "requestSchema": "TombstoneExportRequest",
+      "responseSchema": "ExportLifecycleView"
+    },
+    {
+      "operationId": "export.gc",
+      "method": "POST",
+      "path": "/v1/exports/gc",
+      "requestSchema": "CollectExportGarbageRequest",
+      "responseSchema": "ExportGarbageCollectionView"
+    },
+    {
+      "operationId": "run.read",
+      "method": "GET",
+      "path": "/v1/runs/{objectId}",
+      "requestSchema": "ObjectIdRequest",
+      "responseSchema": "RunView"
+    },
+    {
+      "operationId": "run.list",
+      "method": "GET",
+      "path": "/v1/runs",
+      "requestSchema": "ListRunsRequest",
+      "responseSchema": "RunPageView"
+    },
+    {
+      "operationId": "event.list",
+      "method": "GET",
+      "path": "/v1/events",
+      "requestSchema": "ListEventsRequest",
+      "responseSchema": "EventPageView"
+    },
+    {
+      "operationId": "audit.events.list",
+      "method": "GET",
+      "path": "/v1/audit/events",
+      "requestSchema": "ListAuditEventsRequest",
+      "responseSchema": "AuditEventPageView"
+    },
+    {
+      "operationId": "audit.lineage.read",
+      "method": "GET",
+      "path": "/v1/audit/lineage",
+      "requestSchema": "AuditLineageRequest",
+      "responseSchema": "AuditLineageView"
+    },
+    {
+      "operationId": "audit.export",
+      "method": "GET",
+      "path": "/v1/audit/export",
+      "requestSchema": "ListAuditEventsRequest",
+      "responseSchema": "AuditExportView"
+    },
+    {
+      "operationId": "artifact.read",
+      "method": "GET",
+      "path": "/v1/artifacts/{objectId}",
+      "requestSchema": "ObjectIdRequest",
+      "responseSchema": "ArtifactView"
+    },
+    {
+      "operationId": "artifact.list",
+      "method": "GET",
+      "path": "/v1/runs/{runId}/artifacts",
+      "requestSchema": "ListArtifactsRequest",
+      "responseSchema": "ArtifactPageView"
+    },
+    {
+      "operationId": "artifact.content",
+      "method": "GET",
+      "path": "/v1/artifacts/content",
+      "requestSchema": "ArtifactContentRequest",
+      "responseSchema": "ArtifactContentPage"
+    },
+    {
+      "operationId": "drift.report.read",
+      "method": "GET",
+      "path": "/v1/drift-reports/{artifactId}",
+      "requestSchema": "ObjectIdRequest",
+      "responseSchema": "ReportView"
+    },
+    {
+      "operationId": "quality.report.read",
+      "method": "GET",
+      "path": "/v1/quality-reports/{artifactId}",
+      "requestSchema": "ObjectIdRequest",
+      "responseSchema": "ReportView"
+    },
+    {
+      "operationId": "report.findings.list",
+      "method": "GET",
+      "path": "/v1/reports/{artifactId}/findings",
+      "requestSchema": "ListFindingsRequest",
+      "responseSchema": "FindingPageView"
+    },
+    {
+      "operationId": "automation.create",
+      "method": "POST",
+      "path": "/v1/automations",
+      "requestSchema": "CreateAutomationRequest",
+      "responseSchema": "AutomationView"
+    },
+    {
+      "operationId": "automation.list",
+      "method": "GET",
+      "path": "/v1/automations",
+      "requestSchema": "ListAutomationsRequest",
+      "responseSchema": "AutomationPageView"
+    },
+    {
+      "operationId": "automation.read",
+      "method": "GET",
+      "path": "/v1/automations/{automationId}",
+      "requestSchema": "AutomationIdRequest",
+      "responseSchema": "AutomationView"
+    },
+    {
+      "operationId": "automation.update",
+      "method": "POST",
+      "path": "/v1/automations/{automationId}",
+      "requestSchema": "UpdateAutomationRequest",
+      "responseSchema": "AutomationView"
+    },
+    {
+      "operationId": "automation.pause",
+      "method": "POST",
+      "path": "/v1/automations/{automationId}/pause",
+      "requestSchema": "AutomationTransitionRequest",
+      "responseSchema": "AutomationView"
+    },
+    {
+      "operationId": "automation.resume",
+      "method": "POST",
+      "path": "/v1/automations/{automationId}/resume",
+      "requestSchema": "AutomationTransitionRequest",
+      "responseSchema": "AutomationView"
+    },
+    {
+      "operationId": "automation.delete",
+      "method": "POST",
+      "path": "/v1/automations/{automationId}/delete",
+      "requestSchema": "AutomationTransitionRequest",
+      "responseSchema": "AutomationView"
+    },
+    {
+      "operationId": "automation.next-run",
+      "method": "GET",
+      "path": "/v1/automations/{automationId}/next-run",
+      "requestSchema": "AutomationIdRequest",
+      "responseSchema": "AutomationNextRunView"
+    },
+    {
+      "operationId": "automation.history.list",
+      "method": "GET",
+      "path": "/v1/automations/{automationId}/history",
+      "requestSchema": "ListAutomationHistoryRequest",
+      "responseSchema": "AutomationHistoryPageView"
+    },
+    {
+      "operationId": "automation.trigger",
+      "method": "POST",
+      "path": "/v1/automations/{automationId}/trigger",
+      "requestSchema": "TriggerAutomationRequest",
+      "responseSchema": "JobView"
+    }
+  ]
+}
