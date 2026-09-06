@@ -241,6 +241,10 @@ jobs:
         run: |
           node scripts/analyze-bundles.mjs apps/api/dist apps/dashboard/.next packages/client/dist
 
+      - name: Scan the web-client bundle for fixture/mock references
+        run: |
+          node scripts/check-production-bundle.mjs apps/dashboard/.next packages/client/dist
+
   # FE1-S6 (#24): every shipped surface must build in CI — web (Next),
   # desktop (Electron packaging smoke; signing/notarization is FE4-D1) and
   # cli. Buildable legs additionally re-run their bundle budget.
@@ -280,13 +284,16 @@ jobs:
 
       - name: Package desktop (Electron packaging smoke)
         if: ${{ matrix.target == 'desktop' }}
-        run: bun run --cwd apps/desktop package
+        run: |
+          bun run --cwd apps/desktop package
+          node scripts/check-production-bundle.mjs apps/desktop/dist
 
       - name: Build cli
         if: ${{ matrix.target == 'cli' }}
         run: |
           bun run --cwd apps/cli build
           node scripts/analyze-bundles.mjs apps/cli/dist
+          node scripts/check-production-bundle.mjs apps/cli/dist
 
   # Rollback and restore against a REAL Docker daemon. This is the only job that
   # proves those paths work at all; every other test in the repo mocks the runtime.

@@ -15,6 +15,7 @@
 | Secret scan | git 全部跟踪文件的凭据形状扫描 | [§Secret scan](#secret-scan) |
 | Dependency audit & licenses | OSV 已知漏洞审计 + 许可允许表 | [§Dependency audit](#dependency-audit) / [§License scan](#license-scan) |
 | Bundle analysis | 生产 bundle 字节预算 | [§Bundle analysis](#bundle-analysis) |
+| （Bundle analysis / Build 矩阵内 step）Production bundle scan | 生产产物 fixture/mock 引用扫描 | [§Production bundle scan](#production-bundle-scan) |
 | Build (web/desktop/cli) | 三端构建矩阵 | [§Build matrix](#build-matrix) |
 | E2E (real Docker) | 手动 / tag 触发（不在 PR 必需清单内） | [§E2E](#e2e-real-docker) |
 
@@ -73,6 +74,16 @@
 **做什么**：`node scripts/analyze-bundles.mjs [target...]`——度量生产输出字节并对照 `BUDGETS` 冻结预算（排除 `cache/`、`node_modules` 段）。中心 job 度量 api/dashboard/client；web/cli 由构建矩阵各自度量。
 
 **失败诊断与豁免政策**：超预算 → 先找无谓体积（依赖误入 bundle、未压缩资产）；确属正当增长 → 在脚本中提高该项预算并在 PR 描述写明「哪个功能、新实测值」——预算上调本身是 PR 可见变更。
+
+## Production bundle scan
+
+**做什么**：`node scripts/check-production-bundle.mjs <输出目录>...`（FE1-S5 #23 交付）——扫描目标拓扑生产面（dashboard 的 `.next`、desktop 的 `dist`、cli 的 `dist`）中的 fixture/mock 标记：`@stillflow/dev-fixtures`、`fixtureId`、`SAMPLE_CUSTOMER`、`MOCK_VARIANTS`、`preview-fixtures`、`openship-dev-mode`、`/constants/mock`。该 step 挂在 Bundle analysis job（dashboard 面）与 Build 矩阵 desktop/cli leg 内。
+
+**失败诊断与豁免政策**：
+
+1. 唯一路径豁免：dashboard 的 **`/dev/` 路由段**（`app/(dashboard)/dev/**`）——开发专用检视面（如 `/dev/monitoring`），其页面 chunk 合法携带预览 fixtures；豁免按路径段机械生效，不按文件名或内容；
+2. 标记清单（`MARKERS`）的增删是 PR 可见变更，每项需附理由；
+3. 命中后：从生产面移除引用（fixture 数据改经 dev-only 路由或测试注入）；dev 专有 UI（如 dev 横幅）必须依赖 `NODE_ENV` 内联使标记被 tree-shake。
 
 ## Build matrix
 

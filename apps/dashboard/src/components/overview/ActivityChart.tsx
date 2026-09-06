@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Project } from "@/constants/mock";
+import { Project } from "@/constants/project";
 import { TrendingUp, BarChart3, Activity, Rocket, CheckCircle2, Clock, Zap } from "lucide-react";
 import { generateIcon } from "@/utils/icons";
 import { SlidingToggle } from "@/components/ui/SlidingToggle";

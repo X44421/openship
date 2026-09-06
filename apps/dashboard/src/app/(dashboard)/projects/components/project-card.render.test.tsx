@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import { I18nProvider } from "@/components/i18n-provider";
 import { ModalProvider } from "@/context/ModalContext";
-import type { Project } from "@/constants/mock";
+import type { Project } from "@/constants/project";
 import ProjectCard from "./ProjectCard";
 
 /**

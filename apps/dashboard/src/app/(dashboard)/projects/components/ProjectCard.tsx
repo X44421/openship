@@ -13,7 +13,7 @@ import {
   MoreHorizontal,
   Trash2,
 } from "lucide-react";
-import { type Project } from "@/constants/mock";
+import { type Project } from "@/constants/project";
 import { AppLogo } from "@/components/AppLogo";
 import { getFrameworkConfig } from "@/components/import-project/Frameworks";
 import {
@@ -60,7 +60,7 @@ export function getHostingLabel(
 interface Props {
   /** `primaryDomain` — the project's PRIMARY persisted route — is enriched onto
    *  every row by the projects list and `/info`, but isn't declared on `Project`
-   *  (constants/mock) yet, so it's spelled out here rather than cast away. */
+   *  (constants/project) yet, so it's spelled out here rather than cast away. */
   project: Project & { primaryDomain?: string | null };
   /** On the Apps page: show the catalog app's brand logo instead of the
    *  framework/service fallback icon. */

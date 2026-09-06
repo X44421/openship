@@ -2,7 +2,7 @@
 
 import { type ReactNode } from "react";
 import { Cloud, Server, HardDrive, LayoutGrid } from "lucide-react";
-import type { Project } from "@/constants/mock";
+import type { Project } from "@/constants/project";
 import { useI18n } from "@/components/i18n-provider";
 import type { Dictionary } from "@/i18n";
 
