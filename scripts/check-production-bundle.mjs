@@ -28,7 +28,9 @@ const MARKERS = [
   ["/constants/mock", "legacy mock module name shipped"],
 ];
 
-const SKIP_SEGMENTS = new Set(["cache", "node_modules", ".turbo"]);
+const SKIP_SEGMENTS = new Set(["cache", "node_modules", ".turbo", "trace"]);
+// `trace` skips Turbopack's `.next/trace` build metadata: it records module
+// paths for local build tooling, is not deployed, and is not shipped code.
 const EXEMPT_SEGMENT = "/dev/";
 
 function scan(dir, out) {
