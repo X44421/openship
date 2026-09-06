@@ -1,5 +1,5 @@
 /**
- * Fixtures for the Monitoring layout preview (`/dev/monitoring`).
+ * Preview fixtures for the Monitoring layout — development-only surfaces (`/dev/monitoring`).
  *
  * These exist because the tab could not be LOOKED AT without a control plane, a
  * deployed compose project, and days of real traffic — so two rounds of it shipped on

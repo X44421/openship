@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useMemo } from "react";
 import Link from "next/link";
-import { Project } from "@/constants/mock";
+import { Project } from "@/constants/project";
 import ProjectCard from "./components/ProjectCard";
 import ProjectGridCard from "./components/ProjectGridCard";
 import { ViewToggle, type ProjectView } from "./components/ViewToggle";

@@ -28,7 +28,7 @@ import {
   mockHistoryBuckets,
   mockSingleUsage,
   mockStaticUsage,
-} from "@/components/monitoring/fixtures";
+} from "@/components/monitoring/preview-fixtures";
 
 type Variant = "compose" | "single" | "static" | "no-geo" | "empty" | "loading";
 

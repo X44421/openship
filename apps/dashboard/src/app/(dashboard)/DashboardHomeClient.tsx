@@ -26,7 +26,7 @@ import { getProjectStatus, PROJECT_STATUS_META, projectStatusLabel } from "@/uti
 import type { Dictionary } from "@/i18n";
 import { PageContainer } from "@/components/ui/PageContainer";
 import ProjectCard from "./projects/components/ProjectCard";
-import { type Project } from "@/constants/mock";
+import { type Project } from "@/constants/project";
 import { AppLogo } from "@/components/AppLogo";
 
 /* ------------------------------------------------------------------ */

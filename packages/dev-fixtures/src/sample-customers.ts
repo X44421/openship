@@ -1,22 +1,40 @@
-// FE1-S5 (openship#23) slice 1: this dataset's authoritative, deterministic
-// copy now lives in @stillflow/dev-fixtures (`sample-customers.ts`). This
-// mirrored copy stays because @repo/core must not depend on workspace
-// members and the prototype simulator (retired in FE5-D3) still loads it
-// internally; changes to the dataset belong in dev-fixtures first.
-import type { ColumnId, LogicalField, LogicalSchema, LogicalType } from "./types";
-import { LOGICAL_SCHEMA_VERSION } from "./types";
+// Authoritative copy of the legacy prototype sample dataset ("sample
+// customers", aligned with stillflow `sample-customers` — bounded, dirty on
+// purpose: nulls, empty strings, duplicates, whitespace).
+//
+// FE1-S5 (openship#23) slice 1 of the FE0-D0 E5 row: the demo dataset is
+// isolated here so tests, Storybook and dev entries have one deterministic
+// source. `packages/core/src/clean/sample.ts` keeps a mirrored copy because
+// @repo/core must not depend on workspace members; the core copy is retired
+// with the prototype simulator (FE5-D3).
+//
+// Shapes mirror @repo/core's LogicalField/LogicalSchema structurally —
+// dev-fixtures must not import @repo/core (FE0-C2 §1).
 
-function columnId(n: number): ColumnId {
+export type SampleColumnType = "utf8" | "float64";
+
+export interface SampleColumn {
+  id: string;
+  name: string;
+  dataType: SampleColumnType;
+  nullable: boolean;
+}
+
+export interface SampleSchema {
+  version: number;
+  fields: SampleColumn[];
+}
+
+function columnId(n: number): string {
   return `00000000-0000-4000-8000-${n.toString(16).padStart(12, "0")}`;
 }
 
-export const SAMPLE_CUSTOMERS_ASSET_ID =
-  "00000000-0000-4000-8000-0000000000c1";
+export const SAMPLE_CUSTOMERS_ASSET_ID = "00000000-0000-4000-8000-0000000000c1";
 
 const FIELD_SPECS: Array<{
   n: number;
   name: string;
-  dataType: LogicalType;
+  dataType: SampleColumnType;
   nullable: boolean;
 }> = [
   { n: 1, name: "customer_id", dataType: "utf8", nullable: false },
@@ -29,23 +47,23 @@ const FIELD_SPECS: Array<{
   { n: 8, name: "margin_pct", dataType: "float64", nullable: true },
 ];
 
-export const SAMPLE_CUSTOMER_FIELDS: LogicalField[] = FIELD_SPECS.map((f) => ({
+export const SAMPLE_CUSTOMER_FIELDS: SampleColumn[] = FIELD_SPECS.map((f) => ({
   id: columnId(f.n),
   name: f.name,
   dataType: f.dataType,
   nullable: f.nullable,
 }));
 
-export const SAMPLE_CUSTOMER_SCHEMA: LogicalSchema = {
-  version: LOGICAL_SCHEMA_VERSION,
+export const SAMPLE_CUSTOMER_SCHEMA: SampleSchema = {
+  version: 1,
   fields: SAMPLE_CUSTOMER_FIELDS,
 };
 
-export const COL = Object.fromEntries(
+export const SAMPLE_CUSTOMER_COLUMNS = Object.fromEntries(
   SAMPLE_CUSTOMER_FIELDS.map((f) => [f.name, f.id]),
-) as Record<string, ColumnId>;
+) as Record<string, string>;
 
-/** Fixture aligned with stillflow `sample-customers` (bounded, dirty on purpose). */
+/** Bounded, dirty on purpose — same tuple order as the core mirror. */
 const RAW: Array<Record<string, unknown>> = [
   ["C001", "Alice Chen", "alice@example.com", 245.5, "Electronics", "completed", "2026-01-15", 22.3],
   ["C002", "Bob Martinez", "bob@example.com", 89.99, "Books", "pending", "2026-01-18", 15.0],
@@ -100,7 +118,7 @@ const RAW: Array<Record<string, unknown>> = [
     "margin_pct",
   ];
   for (let i = 0; i < keys.length; i++) {
-    const id = COL[keys[i]!];
+    const id = SAMPLE_CUSTOMER_COLUMNS[keys[i]!];
     let value = tuple[i];
     if (value === "") value = null;
     row[id!] = value;
@@ -108,8 +126,11 @@ const RAW: Array<Record<string, unknown>> = [
   return row;
 });
 
-export function loadSampleAsset(sourceAssetId: string): {
-  schema: LogicalSchema;
+/** Frozen row count — tests pin it so accidental dataset edits are visible. */
+export const SAMPLE_CUSTOMERS_ROW_COUNT = RAW.length;
+
+export function loadSampleCustomerAsset(sourceAssetId: string): {
+  schema: SampleSchema;
   rows: Record<string, unknown>[];
 } {
   if (sourceAssetId !== SAMPLE_CUSTOMERS_ASSET_ID) {

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { projectsApi } from "@/lib/api";
-import { type Project } from "@/constants/mock";
+import { type Project } from "@/constants/project";
 
 interface DashboardNumbers {
   total_active_projects?: number;

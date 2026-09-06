@@ -29,17 +29,17 @@
         "@repo/core": "workspace:*",
         "@repo/db": "workspace:*",
         "@sinclair/typebox": "^0.34.48",
-        "better-auth": "^1.7.3",
+        "better-auth": "^1.5.4",
         "bullmq": "^5.70.4",
         "cron-parser": "^4.9.0",
-        "hono": "^4.13.7",
+        "hono": "^4.12.5",
         "ioredis": "^5.10.0",
         "ipaddr.js": "^2.4.0",
         "maxmind": "^5.0.6",
         "nodemailer": "^9.0.3",
         "pino": "^10.3.1",
         "stripe": "^20.4.0",
-        "yaml": "^2.9.0",
+        "yaml": "^2.8.2",
         "zod": "^4.3.6",
       },
       "devDependencies": {
@@ -48,7 +48,7 @@
         "tsup": "^8.5.1",
         "tsx": "^4.21.0",
         "typescript": "^5.9.3",
-        "vitest": "^4.1.11",
+        "vitest": "^4.0.18",
       },
     },
     "apps/cli": {
@@ -75,7 +75,7 @@
         "tsup": "^8.5.1",
         "tsx": "^4.21.0",
         "typescript": "^5.9.3",
-        "vitest": "^4.1.11",
+        "vitest": "^4.0.18",
       },
     },
     "apps/dashboard": {
@@ -101,7 +101,7 @@
         "clsx": "^2.1.1",
         "country-flag-icons": "^1.6.20",
         "lucide-react": "^0.577.0",
-        "next": "^16.3.4",
+        "next": "^16.1.6",
         "react": "^19.2.4",
         "react-chartjs-2": "^5.3.1",
         "react-dom": "^19.2.4",
@@ -117,7 +117,7 @@
         "postcss": "^8.5.8",
         "tailwindcss": "^4.2.1",
         "typescript": "^5.9.3",
-        "vitest": "^4.1.11",
+        "vitest": "^4.0.18",
       },
     },
     "apps/desktop": {
@@ -161,7 +161,7 @@
         "lucide-react": "0.474.0",
         "marked": "^15.0.0",
         "motion": "12.4.7",
-        "next": "^16.3.4",
+        "next": "^16.1.6",
         "nodemailer": "^6.9.16",
         "react": "^19.2.4",
         "react-dom": "^19.2.4",
@@ -201,7 +201,7 @@
         "@types/ssh2": "^1.15.5",
         "tsup": "^8.5.1",
         "typescript": "^5.9.3",
-        "vitest": "^4.1.11",
+        "vitest": "^4.0.18",
       },
     },
     "packages/client": {
@@ -214,7 +214,7 @@
       "devDependencies": {
         "tsup": "^8.5.1",
         "typescript": "^5.9.3",
-        "vitest": "^4.1.11",
+        "vitest": "^4.0.18",
       },
     },
     "packages/contracts": {
@@ -235,7 +235,7 @@
         "@types/node": "^22.13.0",
         "tsup": "^8.5.1",
         "typescript": "^5.9.3",
-        "vitest": "^4.1.11",
+        "vitest": "^4.0.18",
       },
     },
     "packages/db": {
@@ -253,7 +253,7 @@
         "drizzle-kit": "^0.31.9",
         "tsup": "^8.5.1",
         "typescript": "^5.9.3",
-        "vitest": "^4.1.11",
+        "vitest": "^4.0.18",
       },
     },
     "packages/db-email": {
@@ -280,7 +280,7 @@
       "devDependencies": {
         "tsup": "^8.5.1",
         "typescript": "^5.9.3",
-        "vitest": "^4.1.11",
+        "vitest": "^4.0.18",
       },
     },
     "packages/onboarding": {

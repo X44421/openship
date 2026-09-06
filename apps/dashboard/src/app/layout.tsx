@@ -8,6 +8,7 @@ import { brandNameFor } from "@/lib/product-view";
 import { resolveRequestProductView } from "@/lib/server/product-view";
 import { AuthProvider } from "@/context/AuthContext";
 import { NetworkErrorHandler } from "@/components/network-error-handler";
+import { DevBanner } from "@/components/dev-banner";
 import { ModalProvider } from "@/context/ModalContext";
 import { DesktopChrome } from "@/components/desktop-chrome";
 import {
@@ -139,6 +140,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                 <ModalProvider>
                   <DesktopChrome />
                   <NetworkErrorHandler />
+                  <DevBanner />
                   {children}
                 </ModalProvider>
               </ToastProvider>

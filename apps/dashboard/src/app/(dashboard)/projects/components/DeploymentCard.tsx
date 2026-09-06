@@ -1,6 +1,6 @@
 "use client";
 
-import { Deployment } from "@/constants/mock";
+import { Deployment } from "@/constants/project";
 import { formatDate } from "@/utils/date";
 import { ExternalLink, GitBranch, Clock } from "lucide-react";
 import React from "react";

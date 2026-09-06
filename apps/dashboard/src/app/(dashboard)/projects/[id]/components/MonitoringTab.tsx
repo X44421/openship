@@ -4,9 +4,10 @@
  * Monitoring tab — hook wiring only.
  *
  * All layout lives in `@/components/monitoring/MonitoringView`, which takes every input
- * as a prop. That split exists so the layout can be rendered from fixtures at
- * `/dev/monitoring` instead of needing a control plane, a deployed project and real
- * traffic to look at.
+ * as a prop. That split exists so the layout can also be rendered from fixtures at
+ * `/dev/monitoring` — the only place fixture data is allowed — instead of needing a
+ * control plane, a deployed project and real traffic to look at.
+ * FE1-S5 (openship#23): this production tab no longer imports fixture data itself.
  *
  * Four sources, deliberately separate — they have genuinely different shapes:
  *   useProjectUsageStream  — SSE, ~5s. Live resources; keeps nothing.
@@ -35,36 +36,13 @@ import {
   useProjectUsageHistory,
 } from "@/hooks/useProjectEndpoints";
 import { useProjectUsageStream } from "@/hooks/useProjectUsageStream";
-import { MOCK_VARIANTS, type MockVariant } from "@/components/monitoring/fixtures";
 import { useLiveHits } from "@/components/monitoring/LiveHits";
 import { TopPathsEmptyState } from "@/components/monitoring/TopPathsEmptyState";
 import { useRequestLogStream } from "@/hooks/useRequestLogStream";
 
-/** Dev builds only — the fixture path must never be reachable in production. */
-const PREVIEW_ALLOWED = process.env.NODE_ENV !== "production";
-
 /** The sampler writes a point every 5 min; a 60s poll picks up new buckets soon after
  *  they land so the chart grows without a page reload, at a cost of one small GET/min. */
 const USAGE_HISTORY_POLL_MS = 60_000;
-
-/**
- * Initial preview variant from the URL, read from `window.location.search` directly
- * rather than `useSearchParams()`.
- *
- * Deliberate: `useSearchParams` is empty during prerender and only fills after
- * hydration, and this needs to be right on the FIRST client render or the tab
- * flashes its empty state. Reading `window.location` in a lazy `useState`
- * initializer runs exactly once, on the client, after the URL is final.
- *
- * Accepts `?mock=1` (the obvious thing to type) as well as a named variant.
- */
-function initialPreview(): MockVariant | null {
-  if (!PREVIEW_ALLOWED || typeof window === "undefined") return null;
-  const raw = new URLSearchParams(window.location.search).get("mock");
-  if (!raw) return null;
-  const key = raw === "1" || raw === "true" ? "compose" : raw;
-  return key in MOCK_VARIANTS ? (key as MockVariant) : "compose";
-}
 
 export const MonitoringTab = () => {
   const { id, projectData, domain } = useProjectSettings();
@@ -102,18 +80,10 @@ export const MonitoringTab = () => {
     [domains, domain],
   );
 
-  /**
-   * Fixture preview. Starts from the URL, but is also toggleable from the empty
-   * state — a query param is easy to lose to a navigation and easy to mistype, and
-   * "I can't see the populated layout" was the whole problem.
-   */
-  const [mock, setMock] = React.useState<MockVariant | null>(initialPreview);
-
   // Atomic fetches — own state, own loading, no context coupling. Backed by
   // module-level caches shared with OverviewTab, so both tabs make one request each.
-  // Hooks always run — calling them conditionally would break the hook order. The
-  // mock swaps their RESULTS, and passes `null` id so no request is made.
-  const liveId = mock ? null : id;
+  // Hooks always run — calling them conditionally would break the hook order.
+  const liveId = id;
   const { data: liveAnalytics, isLoading: isLoadingAnalytics } = useAnalyticsData(liveId, domainScope);
   const { data: liveGeo, isLoading: isLoadingGeo } = useAnalyticsGeo(liveId, domainScope);
   const { usage: liveUsage, isConnected, error: usageError, reconnect } = useProjectUsageStream(liveId);
@@ -131,8 +101,7 @@ export const MonitoringTab = () => {
    * Live hits on the map, off by default.
    *
    * Wired HERE rather than inside the map because opening the stream needs the projectId
-   * and the cloud-vs-self-hosted token branch, and because the view has to stay renderable
-   * from fixtures with no network at all.
+   * and the cloud-vs-self-hosted token branch.
    *
    * Same feed as the Logs tab (`useRequestLogStream`), so a ripple corresponds to a row
    * you can go and read there — and the country on it is the one the edge resolved, which
@@ -147,10 +116,7 @@ export const MonitoringTab = () => {
     // When no single domain is scoped (default All), fan out across every route so the map
     // aggregates all domains combined; a scoped `domainScope` still wins over this list.
     domains: streamDomains,
-    // Never while a fixture is driving the page: the preview must not open a socket, and
-    // real ripples over mock aggregates would be two different projects on one map. The
-    // preview gets simulated hits instead — see below.
-    enabled: liveOn && !mock,
+    enabled: liveOn,
     onEntry: (e) => hits.push({ country: e.country, path: e.path, statusCode: e.statusCode }),
     onStatus: (st) => setLiveStatus(st.state === "error" || st.state === "unavailable" ? st.state : null),
   });
@@ -172,101 +138,11 @@ export const MonitoringTab = () => {
     resetHits();
   }, [domainScope, resetHits]);
 
-  /**
-   * Memoized on `mock`, which matters for more than tidiness.
-   *
-   * Rebuilding it every render gives `fixture.geo` a new identity each time, and the
-   * simulated-hits effect below depends on it — so every simulated hit re-rendered, which
-   * re-created the fixture, which tore down and re-armed the interval. It would never have
-   * settled into a steady tick. Memoizing also stops the whole fixture set being
-   * regenerated on every keystroke elsewhere in the tab.
-   */
-  const fixture = useMemo(() => (mock ? MOCK_VARIANTS[mock]() : null), [mock]);
-  const analytics = fixture ? fixture.analytics : liveAnalytics;
-  const geo = fixture ? fixture.geo : liveGeo;
-  const usage = fixture ? fixture.usage : liveUsage;
-  const history = fixture ? fixture.history : liveHistory;
+  const analytics = liveAnalytics;
+  const geo = liveGeo;
+  const usage = liveUsage;
+  const history = liveHistory;
 
-  /**
-   * Simulated hits for the fixture preview.
-   *
-   * Without this, turning Live on in sample mode did nothing at all — the switch lit up and
-   * the map stayed still, which reads as a broken feature rather than as "there is no real
-   * stream here". Since the preview exists to show what the finished thing looks like, the
-   * animation is part of what it has to show.
-   *
-   * Sampled from the FIXTURE's own country counts, weighted, so the ripples land where that
-   * fixture's traffic actually is — the US flashes far more often than Italy, and the map
-   * agrees with the legend beneath it. Paths and statuses are drawn from the same fixture
-   * for the same reason.
-   */
-  const mockGeoData = fixture?.geo;
-  React.useEffect(() => {
-    if (!liveOn || !mock || !mockGeoData) return;
-    const countries = (mockGeoData.countries ?? []).filter((c) => c.count > 0);
-    if (countries.length === 0) return;
-    // Cumulative weights, so one uniform draw picks a country in proportion to its traffic.
-    const cumulative: Array<{ code: string; upto: number }> = [];
-    let running = 0;
-    for (const c of countries) {
-      running += c.count;
-      cumulative.push({ code: c.code, upto: running });
-    }
-    const paths = (mockGeoData.topPaths ?? []).map((p) => p.path);
-    const codes = Object.keys(mockGeoData.statuses ?? {}).filter((c) => Number(c) >= 200);
-
-    const emit = () => {
-      const r = Math.random() * running;
-      hits.push({
-        country: cumulative.find((c) => r <= c.upto)?.code,
-        path: paths.length ? paths[Math.floor(Math.random() * paths.length)] : "/",
-        // Weighted toward 2xx the way real traffic is, rather than uniform across codes —
-        // a preview where a third of the hits are 500s misrepresents the feature.
-        statusCode:
-          Math.random() < 0.9 || codes.length === 0
-            ? 200
-            : Number(codes[Math.floor(Math.random() * codes.length)]),
-      });
-    };
-
-    /*
-     * Rate VARIES, in bursts.
-     *
-     * A metronome at a fixed interval would show one pace and hide the fact that the
-     * display adapts to the arrival rate at all. Real traffic is bursty, and the preview
-     * exists to show what the finished thing looks like — including how it behaves when a
-     * spike arrives. Alternates roughly: ~2s quiet (a few hits/sec), then ~3s busy
-     * (tens/sec), which crosses both ends of the pacing curve in useLiveHits.
-     */
-    let stop = false;
-    let phaseEndsAt = 0;
-    let busy = false;
-    const loop = () => {
-      if (stop) return;
-      const now = performance.now();
-      if (now >= phaseEndsAt) {
-        busy = !busy;
-        phaseEndsAt = now + (busy ? 3000 : 2000);
-      }
-      const perTick = busy ? 6 : 1;
-      for (let i = 0; i < perTick; i++) emit();
-      window.setTimeout(loop, busy ? 45 : 320);
-    };
-    loop();
-    return () => {
-      stop = true;
-    };
-    // `hits.push` and `hits.reset`, NOT `hits`.
-    //
-    // useLiveHits returns a fresh object every render (it has to — `ripples` and `feed`
-    // are state). Depending on the object meant this effect tore down and re-armed the
-    // interval on EVERY render, and since each hit causes a render, the timer restarted
-    // before it could fire again. Whenever renders outpaced the 200ms interval — which the
-    // real tab does, with the log stream and its status updating alongside — the generator
-    // starved completely and the first toggle produced nothing. `push` and `reset` are
-    // useCallback([]) and stable for the component's life.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [liveOn, mock, mockGeoData, hits.push]);
 
   /**
    * Turn per-path collection on or off.
@@ -298,7 +174,7 @@ export const MonitoringTab = () => {
 
   // Cloud reports pathsEnabled: true unconditionally — Oblien's edge aggregates paths
   // regardless, so there is nothing to switch and no button should be offered.
-  const canTogglePaths = geo?.source === "self-hosted" && !mock;
+  const canTogglePaths = geo?.source === "self-hosted";
   const pathsEnabled = pathsOverride ?? geo?.pathsEnabled ?? false;
 
   // Share is against the summed PATH hits, not totalRequests: static assets are
@@ -320,17 +196,15 @@ export const MonitoringTab = () => {
   return (
     <MonitoringView
       analytics={analytics}
-      isLoadingAnalytics={fixture ? false : isLoadingAnalytics}
+      isLoadingAnalytics={isLoadingAnalytics}
       geo={geo}
-      isLoadingGeo={fixture ? false : isLoadingGeo}
+      isLoadingGeo={isLoadingGeo}
       history={history}
-      isLoadingHistory={fixture ? false : isLoadingHistory}
-      // Fixtures always show the populated layout; real data hides the chart on desktop
-      // where nothing is ever sampled.
-      historySupported={fixture ? true : !isDesktop}
+      isLoadingHistory={isLoadingHistory}
+      historySupported={!isDesktop}
       usage={usage}
-      isUsageConnected={fixture ? true : isConnected}
-      usageError={fixture ? null : usageError}
+      isUsageConnected={isConnected}
+      usageError={usageError}
       onReconnectUsage={reconnect}
       serviceKey={serviceKey}
       onServiceKeyChange={setServiceKey}
@@ -346,7 +220,7 @@ export const MonitoringTab = () => {
       trafficChart={
         <TrafficChart
           trafficData={analytics?.trafficByHour ?? []}
-          isLoading={fixture ? false : isLoadingAnalytics}
+          isLoading={isLoadingAnalytics}
           dateRange={dateRange}
           totalRequests={analytics?.summary.totalRequests}
         />
@@ -367,8 +241,6 @@ export const MonitoringTab = () => {
           <TopPathsEmptyState onEnable={() => setPathsCollection(true)} isBusy={pathsBusy} />
         ) : null
       }
-      previewVariant={mock}
-      onPreviewChange={PREVIEW_ALLOWED ? setMock : undefined}
       domains={domains}
       domainScope={domainScope}
       live={{

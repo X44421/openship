@@ -15,7 +15,7 @@ import {
   mockHistoryBuckets,
   mockSingleUsage,
   mockStaticUsage,
-} from "./fixtures";
+} from "./preview-fixtures";
 
 /**
  * Does the Monitoring layout actually RENDER its blocks?

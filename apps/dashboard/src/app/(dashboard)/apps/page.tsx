@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback, Fragment } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Project } from "@/constants/mock";
+import { Project } from "@/constants/project";
 import ProjectCard from "../projects/components/ProjectCard";
 import { projectsApi } from "@/lib/api";
 import { updatesApi } from "@/lib/api/updates";
