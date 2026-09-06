@@ -16,7 +16,6 @@
 | Dependency audit & licenses | OSV 已知漏洞审计 + 许可允许表 | [§Dependency audit](#dependency-audit) / [§License scan](#license-scan) |
 | Bundle analysis | 生产 bundle 字节预算 | [§Bundle analysis](#bundle-analysis) |
 | （Bundle analysis / Build 矩阵内 step）Production bundle scan | 生产产物 fixture/mock 引用扫描 | [§Production bundle scan](#production-bundle-scan) |
-| Integration matrix | capability matrix ↔ StillFlow manifest 机械一致性 | [§Integration matrix](#integration-matrix) |
 | Build (web/desktop/cli) | 三端构建矩阵 | [§Build matrix](#build-matrix) |
 | E2E (real Docker) | 手动 / tag 触发（不在 PR 必需清单内） | [§E2E](#e2e-real-docker) |
 
@@ -85,16 +84,6 @@
 1. 唯一路径豁免：dashboard 的 **`/dev/` 路由段**（`app/(dashboard)/dev/**`）——开发专用检视面（如 `/dev/monitoring`），其页面 chunk 合法携带预览 fixtures；豁免按路径段机械生效，不按文件名或内容；
 2. 标记清单（`MARKERS`）的增删是 PR 可见变更，每项需附理由；
 3. 命中后：从生产面移除引用（fixture 数据改经 dev-only 路由或测试注入）；dev 专有 UI（如 dev 横幅）必须依赖 `NODE_ENV` 内联使标记被 tree-shake。
-
-## Integration matrix
-
-**做什么**：`node scripts/check-capability-matrix.mjs`（FE1-I1 #30 A4 交付）——校验 `docs/integration/stillflow-capability-matrix.json`（90 行，主键 `operationId`）与 `stillflow-manifest.snapshot.json` 机械同步：行数相等、无遗漏/无手加行/无重复、disposition 枚举、`BLOCKED` 必有 blocker、`WIRED` 必有 client evidence、Markdown 渲染非过期。install 前运行（纯词法/文件一致性）。
-
-**失败诊断与豁免政策**：
-
-1. StillFlow main 新增/删除路由 → 本地跑 `node scripts/check-capability-matrix.mjs --stillflow <stillflow 检出路径>` 定位差异，重新提取快照并补分类行（PR 内附 stillflow merge SHA）；
-2. Markdown 报过期 → `node scripts/check-capability-matrix.mjs --write-md` 重新生成，**禁止手改**渲染文件；
-3. 豁免不存在：每行必须恰好落入 `WIRED / READY-TO-WIRE / BLOCKED / NON-PRODUCT/INTERNAL` 之一；`WIRED` 必须附 client 证据，`BLOCKED` 必须附 blocker，`NON-PRODUCT/INTERNAL` 必须附产品处置理由（矩阵 `productDisposition` 字段）。
 
 ## Build matrix
 

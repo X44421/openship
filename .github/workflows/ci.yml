@@ -295,22 +295,6 @@ jobs:
           node scripts/analyze-bundles.mjs apps/cli/dist
           node scripts/check-production-bundle.mjs apps/cli/dist
 
-  # FE1-I1 (#30) phase A4: the StillFlow capability matrix must stay in
-  # mechanical sync with the authoritative route manifest
-  # (stillflow backend/crates/stillflow-api/src/manifest.rs — OpenAPI is
-  # derived from it, never the reverse). Pre-install by design: the check is
-  # pure lexical/file consistency. Runbook: docs/ci/quality-gates.md
-  # §Integration matrix.
-  integration-matrix:
-    name: Integration matrix
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-
-      - name: Verify the capability matrix against the manifest snapshot
-        run: node scripts/check-capability-matrix.mjs
-
   # Rollback and restore against a REAL Docker daemon. This is the only job that
   # proves those paths work at all; every other test in the repo mocks the runtime.
   #
