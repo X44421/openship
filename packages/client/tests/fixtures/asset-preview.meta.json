@@ -1,0 +1,65 @@
+{
+  "wireVersion": 1,
+  "meta": {
+    "apiVersion": 1,
+    "requestId": "11111111-2222-3333-4444-555555555555"
+  },
+  "envelope": {
+    "version": 1,
+    "schemaFingerprint": [
+      72,
+      234,
+      83,
+      154,
+      64,
+      57,
+      232,
+      241,
+      103,
+      85,
+      196,
+      243,
+      192,
+      125,
+      44,
+      100,
+      114,
+      26,
+      150,
+      109,
+      100,
+      91,
+      103,
+      97,
+      63,
+      47,
+      92,
+      5,
+      236,
+      217,
+      33,
+      199
+    ],
+    "sourceAssetId": "7e2a1c0e-5c1e-4a6e-9d0a-3f1b2c4d5e6f"
+  },
+  "batches": [
+    {
+      "sequence": 0,
+      "rowCount": 2,
+      "byteCount": 1332
+    },
+    {
+      "sequence": 1,
+      "rowCount": 1,
+      "byteCount": 1256
+    }
+  ],
+  "view": "assetPreview",
+  "rowsReturned": 3,
+  "bytesReturned": 4096,
+  "rowsTruncated": false,
+  "bytesTruncated": false,
+  "warnings": [
+    "svc-a1 fixture warning"
+  ]
+}

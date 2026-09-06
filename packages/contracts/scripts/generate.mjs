@@ -75,7 +75,11 @@ function renderAlias(type) {
 }
 
 function renderConstant(constant) {
-  return `export const ${constant.name} = ${constant.value};`;
+  const value =
+    typeof constant.value === "number" || typeof constant.value === "boolean"
+      ? constant.value
+      : JSON.stringify(constant.value);
+  return `export const ${constant.name} = ${value};`;
 }
 
 const lines = [];
