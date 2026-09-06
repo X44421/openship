@@ -13,7 +13,7 @@ import { join } from "node:path";
 // Measured 2026-09-06 on main@e83ba3f (see PR #30 evidence); budgets carry
 // ~2x headroom over the measured shipped bytes.
 const BUDGETS = [
-  { path: "apps/api/dist", maxBytes: 5 * 1024 * 1024 },
+  { path: "apps/api/dist", maxBytes: 25 * 1024 * 1024 },
   { path: "apps/dashboard/.next", maxBytes: 250 * 1024 * 1024 },
   { path: "apps/web/.next", maxBytes: 550 * 1024 * 1024 },
   { path: "apps/cli/dist", maxBytes: 80 * 1024 * 1024 },

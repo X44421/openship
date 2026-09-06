@@ -136,5 +136,3 @@ export interface ApiErrorResponse {
   readonly meta: ResponseMetadata;
   readonly error: ApiErrorBody;
 }
-
-// red-evidence: drift must fail on hand-edits
