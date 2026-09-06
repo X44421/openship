@@ -260,7 +260,7 @@ describe("redactCredentials", () => {
   });
 
   it("redacts a bare token with no URL around it", () => {
-    expect(redactCredentials("AUTH=github_pat_11ABCDEFG0123456789abcdefgh")).toBe("AUTH=***");
+    expect(redactCredentials("AUTH=github_pat_11ABCDEFG0123456789abcdefgh")).toBe("AUTH=***"); // secret-scan:allow(redaction test fixture — synthetic token asserting the redactor, not a credential)
     expect(redactCredentials("token ghs_ABCDEFGHIJKLMNOP0")).toBe("token ***");
   });
 
