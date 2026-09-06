@@ -12,7 +12,7 @@
  * development build — so demo/fixture-driven states can never be mistaken for
  * production truth (and never shipped as it).
  */
-const IS_DEV = true; // RED evidence: force the marker to ship
+const IS_DEV = process.env.NODE_ENV !== "production";
 
 /** Scan marker: must not appear in production bundle output. */
 export const DEV_BANNER_MARKER = "openship-dev-mode";
