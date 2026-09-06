@@ -9,19 +9,26 @@
   "snapshotVersion": 1,
   "source": {
     "repository": "X44421/stillflow",
-    "ref": "main@636cd7db443bed45e7adcf1596785670cfc3ff1c",
-    "extractedAt": "2026-08-24T01:05:00Z",
-    "method": "manual extraction of serde wire shapes; cross-checked against upstream pinned tests (schema_json_is_stable_and_roundtrips, rejects_invalid_version_during_deserialization)",
+    "ref": "main@e36f099f (SVC-A1 PR-1 merged 2026-09-06) + closing PR #310 head e0c2493 (§6.1, Draft, CI green)",
+    "extractedAt": "2026-09-06T03:00:00Z",
+    "method": "manual extraction of serde wire shapes; cross-checked against upstream pinned tests and the SVC-A1 frozen contract (docs/issues/issue-303-svc-a1-http-service-entry-contract.md §3.2/§3.3/§6.1)",
     "files": {
       "logicalTypes": "backend/crates/stillflow-core/src/logical.rs",
       "scalarValuesAndExprs": "backend/crates/stillflow-core/src/expression.rs",
       "previewLimits": "backend/crates/stillflow-core/src/domain/preview.rs",
-      "planVersion": "backend/crates/stillflow-plan/src/plan.rs"
+      "planVersion": "backend/crates/stillflow-plan/src/plan.rs",
+      "apiEnvelope": "backend/crates/stillflow-api/src/envelope.rs (RequestMetadata/ResponseMetadata/ApiErrorResponse; PR-1 additive-only, unchanged on main)",
+      "apiErrorCodes": "backend/crates/stillflow-api/src/error.rs::ApiErrorCode + SVC-A1 contract §3.2 status table",
+      "apiVersion": "backend/crates/stillflow-api/src/version.rs::API_V1",
+      "typedBinaryWire": "backend/crates/stillflow-service/src/wire.rs (SVC-A1 §6.1, closing PR #310)"
     }
   },
   "serdeConventions": {
     "case": "camelCase on struct fields and enum variants",
-    "taggedEnum": { "tag": "kind", "content": "value" },
+    "taggedEnum": {
+      "tag": "kind",
+      "content": "value"
+    },
     "notes": [
       "Unit variants serialize without the content field; only { kind } is present.",
       "ColumnId is serde transparent over Uuid and serializes as a UUID string.",
@@ -30,86 +37,395 @@
     ]
   },
   "constants": [
-    { "name": "LOGICAL_SCHEMA_VERSION", "value": 1, "rust": "stillflow-core/src/logical.rs::LOGICAL_SCHEMA_VERSION" },
-    { "name": "MAX_SCHEMA_NESTING_DEPTH", "value": 64, "rust": "stillflow-core/src/logical.rs::MAX_SCHEMA_NESTING_DEPTH" },
-    { "name": "MAX_SCHEMA_FIELDS", "value": 4096, "rust": "stillflow-core/src/logical.rs::MAX_SCHEMA_FIELDS" },
-    { "name": "MAX_SCHEMA_TEXT_BYTES", "value": 1048576, "rust": "stillflow-core/src/logical.rs::MAX_SCHEMA_TEXT_BYTES" },
-    { "name": "PREVIEW_DEFAULT_ROW_LIMIT", "value": 1000, "rust": "stillflow-core/src/domain/preview.rs::PreviewRequest::DEFAULT_ROW_LIMIT" },
-    { "name": "PREVIEW_MAX_ROW_LIMIT", "value": 10000, "rust": "stillflow-core/src/domain/preview.rs::PreviewRequest::MAX_ROW_LIMIT" },
-    { "name": "PREVIEW_MAX_BYTE_LIMIT", "value": 52428800, "rust": "stillflow-core/src/domain/preview.rs::PreviewRequest::MAX_BYTE_LIMIT" },
-    { "name": "PLAN_VERSION", "value": 1, "rust": "stillflow-plan/src/plan.rs::PLAN_VERSION" }
+    {
+      "name": "LOGICAL_SCHEMA_VERSION",
+      "value": 1,
+      "rust": "stillflow-core/src/logical.rs::LOGICAL_SCHEMA_VERSION"
+    },
+    {
+      "name": "MAX_SCHEMA_NESTING_DEPTH",
+      "value": 64,
+      "rust": "stillflow-core/src/logical.rs::MAX_SCHEMA_NESTING_DEPTH"
+    },
+    {
+      "name": "MAX_SCHEMA_FIELDS",
+      "value": 4096,
+      "rust": "stillflow-core/src/logical.rs::MAX_SCHEMA_FIELDS"
+    },
+    {
+      "name": "MAX_SCHEMA_TEXT_BYTES",
+      "value": 1048576,
+      "rust": "stillflow-core/src/logical.rs::MAX_SCHEMA_TEXT_BYTES"
+    },
+    {
+      "name": "PREVIEW_DEFAULT_ROW_LIMIT",
+      "value": 1000,
+      "rust": "stillflow-core/src/domain/preview.rs::PreviewRequest::DEFAULT_ROW_LIMIT"
+    },
+    {
+      "name": "PREVIEW_MAX_ROW_LIMIT",
+      "value": 10000,
+      "rust": "stillflow-core/src/domain/preview.rs::PreviewRequest::MAX_ROW_LIMIT"
+    },
+    {
+      "name": "PREVIEW_MAX_BYTE_LIMIT",
+      "value": 52428800,
+      "rust": "stillflow-core/src/domain/preview.rs::PreviewRequest::MAX_BYTE_LIMIT"
+    },
+    {
+      "name": "PLAN_VERSION",
+      "value": 1,
+      "rust": "stillflow-plan/src/plan.rs::PLAN_VERSION"
+    },
+    {
+      "name": "API_VERSION",
+      "value": 1,
+      "rust": "stillflow-api/src/version.rs::API_V1 (BOOTSTRAP_MANIFEST.api_version)"
+    },
+    {
+      "name": "TYPED_BINARY_WIRE_VERSION",
+      "value": 1,
+      "rust": "stillflow-service/src/wire.rs::WIRE_VERSION (contract §6.1)"
+    },
+    {
+      "name": "TYPED_BINARY_WIRE_METADATA_KEY",
+      "value": "stillflow.wire.v1",
+      "rust": "stillflow-service/src/wire.rs::WIRE_METADATA_KEY (contract §6.1)"
+    },
+    {
+      "name": "TYPED_BINARY_MEDIA_TYPE",
+      "value": "application/vnd.apache.arrow.stream",
+      "rust": "stillflow-service/src/wire.rs::ARROW_STREAM_MEDIA_TYPE (contract §6.1)"
+    },
+    {
+      "name": "API_ERROR_HTTP_STATUS",
+      "value": {
+        "unsupportedVersion": 400,
+        "invalidRequest": 400,
+        "notFound": 404,
+        "conflict": 409,
+        "limitExceeded": 413,
+        "unauthorized": 401,
+        "internal": 500
+      },
+      "rust": "stillflow-service/src/adapter.rs::status_for (SVC-A1 contract §3.2 fixed table)"
+    }
   ],
   "types": [
-    { "kind": "alias", "name": "ColumnId", "target": "string", "note": "serde transparent Uuid" },
+    {
+      "kind": "alias",
+      "name": "ColumnId",
+      "target": "string",
+      "note": "serde transparent Uuid"
+    },
     {
       "kind": "unitEnum",
       "name": "TimeUnit",
-      "variants": ["second", "millisecond", "microsecond", "nanosecond"],
+      "variants": [
+        "second",
+        "millisecond",
+        "microsecond",
+        "nanosecond"
+      ],
       "note": "logical.rs TimeUnit, camelCase variants"
     },
     {
       "kind": "taggedEnum",
       "name": "ScalarValue",
       "variants": [
-        { "name": "null", "payload": null },
-        { "name": "boolean", "payload": { "type": "boolean" } },
-        { "name": "int64", "payload": { "type": "number" }, "note": "Rust i64 as JSON number" },
-        { "name": "uint64", "payload": { "type": "number" }, "note": "Rust u64 as JSON number" },
-        { "name": "float64", "payload": { "type": "number" }, "note": "FiniteF64 serializes as plain f64" },
-        { "name": "utf8", "payload": { "type": "string" } }
+        {
+          "name": "null",
+          "payload": null
+        },
+        {
+          "name": "boolean",
+          "payload": {
+            "type": "boolean"
+          }
+        },
+        {
+          "name": "int64",
+          "payload": {
+            "type": "number"
+          },
+          "note": "Rust i64 as JSON number"
+        },
+        {
+          "name": "uint64",
+          "payload": {
+            "type": "number"
+          },
+          "note": "Rust u64 as JSON number"
+        },
+        {
+          "name": "float64",
+          "payload": {
+            "type": "number"
+          },
+          "note": "FiniteF64 serializes as plain f64"
+        },
+        {
+          "name": "utf8",
+          "payload": {
+            "type": "string"
+          }
+        }
       ]
     },
     {
       "kind": "taggedEnum",
       "name": "LogicalType",
       "variants": [
-        { "name": "null", "payload": null },
-        { "name": "boolean", "payload": null },
-        { "name": "int8", "payload": null },
-        { "name": "int16", "payload": null },
-        { "name": "int32", "payload": null },
-        { "name": "int64", "payload": null },
-        { "name": "uint8", "payload": null },
-        { "name": "uint16", "payload": null },
-        { "name": "uint32", "payload": null },
-        { "name": "uint64", "payload": null },
-        { "name": "float32", "payload": null },
-        { "name": "float64", "payload": null },
-        { "name": "utf8", "payload": null },
-        { "name": "binary", "payload": null },
-        { "name": "date32", "payload": null },
+        {
+          "name": "null",
+          "payload": null
+        },
+        {
+          "name": "boolean",
+          "payload": null
+        },
+        {
+          "name": "int8",
+          "payload": null
+        },
+        {
+          "name": "int16",
+          "payload": null
+        },
+        {
+          "name": "int32",
+          "payload": null
+        },
+        {
+          "name": "int64",
+          "payload": null
+        },
+        {
+          "name": "uint8",
+          "payload": null
+        },
+        {
+          "name": "uint16",
+          "payload": null
+        },
+        {
+          "name": "uint32",
+          "payload": null
+        },
+        {
+          "name": "uint64",
+          "payload": null
+        },
+        {
+          "name": "float32",
+          "payload": null
+        },
+        {
+          "name": "float64",
+          "payload": null
+        },
+        {
+          "name": "utf8",
+          "payload": null
+        },
+        {
+          "name": "binary",
+          "payload": null
+        },
+        {
+          "name": "date32",
+          "payload": null
+        },
         {
           "name": "timestamp",
           "payload": {
             "type": "object",
             "fields": [
-              { "name": "unit", "type": "TimeUnit" },
-              { "name": "timezone", "type": "string", "nullable": true }
+              {
+                "name": "unit",
+                "type": "TimeUnit"
+              },
+              {
+                "name": "timezone",
+                "type": "string",
+                "nullable": true
+              }
             ]
           }
         },
-        { "name": "list", "payload": { "type": "LogicalType" } },
-        { "name": "struct", "payload": { "type": "array", "items": "LogicalField" } }
+        {
+          "name": "list",
+          "payload": {
+            "type": "LogicalType"
+          }
+        },
+        {
+          "name": "struct",
+          "payload": {
+            "type": "array",
+            "items": "LogicalField"
+          }
+        }
       ]
     },
     {
       "kind": "struct",
       "name": "LogicalField",
       "fields": [
-        { "name": "id", "type": "ColumnId" },
-        { "name": "name", "type": "string" },
-        { "name": "dataType", "type": "LogicalType" },
-        { "name": "nullable", "type": "boolean" },
-        { "name": "metadata", "type": "Record<string, string>", "optional": true, "note": "skip_serializing_if BTreeMap::is_empty" }
+        {
+          "name": "id",
+          "type": "ColumnId"
+        },
+        {
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "name": "dataType",
+          "type": "LogicalType"
+        },
+        {
+          "name": "nullable",
+          "type": "boolean"
+        },
+        {
+          "name": "metadata",
+          "type": "Record<string, string>",
+          "optional": true,
+          "note": "skip_serializing_if BTreeMap::is_empty"
+        }
       ]
     },
     {
       "kind": "struct",
       "name": "LogicalSchema",
       "fields": [
-        { "name": "version", "type": "number" },
-        { "name": "fields", "type": "array", "items": "LogicalField" },
-        { "name": "metadata", "type": "Record<string, string>", "optional": true, "note": "skip_serializing_if BTreeMap::is_empty" }
+        {
+          "name": "version",
+          "type": "number"
+        },
+        {
+          "name": "fields",
+          "type": "array",
+          "items": "LogicalField"
+        },
+        {
+          "name": "metadata",
+          "type": "Record<string, string>",
+          "optional": true,
+          "note": "skip_serializing_if BTreeMap::is_empty"
+        }
+      ]
+    },
+    {
+      "name": "RequestPrincipalKind",
+      "kind": "unitEnum",
+      "variants": [
+        "member",
+        "serviceAccount"
+      ],
+      "note": "stillflow-api/src/authorization.rs::RequestPrincipalKind, camelCase unit variants"
+    },
+    {
+      "name": "RequestPrincipal",
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "kind",
+          "type": "RequestPrincipalKind"
+        },
+        {
+          "name": "id",
+          "type": "string",
+          "note": "serde transparent Uuid"
+        }
+      ]
+    },
+    {
+      "name": "RequestMetadata",
+      "kind": "struct",
+      "note": "envelope.rs::RequestMetadata; camelCase keys; principal/idempotencyKey are skip_serializing_if Option",
+      "fields": [
+        {
+          "name": "apiVersion",
+          "type": "number"
+        },
+        {
+          "name": "requestId",
+          "type": "string",
+          "note": "Uuid v4"
+        },
+        {
+          "name": "workspaceId",
+          "type": "string",
+          "note": "Uuid"
+        },
+        {
+          "name": "idempotencyKey",
+          "type": "string",
+          "optional": true
+        },
+        {
+          "name": "principal",
+          "type": "RequestPrincipal",
+          "optional": true
+        }
+      ]
+    },
+    {
+      "name": "ResponseMetadata",
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "apiVersion",
+          "type": "number"
+        },
+        {
+          "name": "requestId",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "ApiErrorCode",
+      "kind": "unitEnum",
+      "variants": [
+        "unsupportedVersion",
+        "invalidRequest",
+        "notFound",
+        "conflict",
+        "limitExceeded",
+        "unauthorized",
+        "internal"
+      ],
+      "note": "error.rs::ApiErrorCode serde camelCase; the authoritative error contract (code/message), HTTP status is advisory"
+    },
+    {
+      "name": "ApiErrorBody",
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "code",
+          "type": "ApiErrorCode"
+        },
+        {
+          "name": "message",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "ApiErrorResponse",
+      "kind": "struct",
+      "fields": [
+        {
+          "name": "meta",
+          "type": "ResponseMetadata"
+        },
+        {
+          "name": "error",
+          "type": "ApiErrorBody"
+        }
       ]
     }
   ]
