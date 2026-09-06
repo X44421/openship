@@ -6,11 +6,11 @@
     "generatedAt": "2026-09-06T13:05:00Z"
   },
   "summary": {
-    "routeCount": 90,
+    "routeCount": 89,
     "dispositions": {
-      "NON-PRODUCT/INTERNAL": 36,
-      "READY-TO-WIRE": 47,
-      "WIRED": 7
+      "WIRED": 7,
+      "READY-TO-WIRE": 46,
+      "NON-PRODUCT/INTERNAL": 36
     }
   },
   "rows": [
@@ -1348,21 +1348,6 @@
       "targetClientMethod": "",
       "productDisposition": "internal/platform-ops",
       "notes": "workspace provisioning is process/ops config (single-workspace binding, SVC-A1 §4.3)"
-    },
-    {
-      "operationId": "workspace.read",
-      "method": "GET",
-      "path": "/v1/workspaces/{objectId}",
-      "requestSchema": "ObjectIdRequest",
-      "responseSchema": "WorkspaceView",
-      "disposition": "READY-TO-WIRE",
-      "availabilityDev": "AVAILABLE-IN-DEV (stillflow-server @ c29d8c4, handshake 200 / manifest 90 routes — #28 closeout probe)",
-      "availabilityRelease": "NOT-AVAILABLE (stillflow has no GitHub releases as of 2026-09-06 — ledger L4/L5/L6)",
-      "clientEvidence": "",
-      "blocker": "",
-      "targetClientMethod": "client.workspaceRead",
-      "productDisposition": "product",
-      "notes": "single-workspace binding reads its own record"
     }
   ]
 }
